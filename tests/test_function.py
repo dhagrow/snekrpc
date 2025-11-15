@@ -3,11 +3,15 @@
 import contextlib
 import inspect
 import sys
+from typing import Any, TYPE_CHECKING
 
 import pytest
 from funcsigs import Parameter as Param
 
-from snekrpc.utils import function
+if TYPE_CHECKING:
+    function: Any
+else:
+    from snekrpc.utils import function
 
 
 @contextlib.contextmanager
@@ -38,10 +42,14 @@ class F(object):
             yield i
 
     # SyntaxError on Python < 3.8
-    try:
-        exec("def positional_only(self, a, /): 'positional_only'; return a")
-    except SyntaxError:
-        pass
+    if TYPE_CHECKING:
+        def positional_only(self, a):
+            return a
+    else:
+        try:
+            exec("def positional_only(self, a, /): 'positional_only'; return a")
+        except SyntaxError:
+            pass
 
     def var_positional(self, *a):
         "var_positional"

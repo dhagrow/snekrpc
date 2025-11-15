@@ -18,7 +18,7 @@ class UnixConnection(tcp.TcpConnection):
 class UnixTransport(tcp.TcpTransport):
     _name_ = 'unix'
     log = log
-    Connection = UnixConnection
+    Connection: type[tcp.TcpConnection] = UnixConnection
 
     @param('backlog', int, default=tcp.BACKLOG)
     @param('chunk_size', int, default=tcp.CHUNK_SIZE)
@@ -30,9 +30,12 @@ class UnixTransport(tcp.TcpTransport):
         chunk_size: int | None = None,
     ) -> None:
         super().__init__(url, timeout, backlog, chunk_size)
-        self._path = self._url.path
+        path = self._url.path
+        if path is None:
+            raise ValueError('unix url must include a path')
+        self._path: str = path
 
-    def connect(self, client: Any) -> UnixConnection:
+    def connect(self, client: Any) -> tcp.TcpConnection:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.settimeout(self.timeout)
         sock.connect(self._path)
@@ -41,11 +44,12 @@ class UnixTransport(tcp.TcpTransport):
     def bind(self) -> None:
         utils.path.discard_file(self._path)
 
-        self._sock = sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.settimeout(ACCEPT_TIMEOUT)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(self._path)
         sock.listen(self.backlog)
+        self._sock = sock
 
     def serve(self, server: Any) -> None:
         try:

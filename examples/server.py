@@ -10,7 +10,7 @@ def main():
     logs.init()
 
     s = snekrpc.Server('tcp://localhost:1234')
-    s.add_service(Service, alias='ex')
+    s.add_service(Service(), alias='ex')
     s.serve()
 
 if __name__ == '__main__':

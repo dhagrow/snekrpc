@@ -40,7 +40,9 @@ class Retry:
         while True:
             try:
                 return func(*args, **kwargs)
-            except self.errors as exc:
+            except Exception as exc:
+                if not isinstance(exc, self.errors):
+                    raise
                 if retries >= self.count >= 0:
                     raise
                 time.sleep(self.interval)
@@ -54,7 +56,9 @@ class Retry:
                 for value in func(*args, **kwargs):
                     yield value
                 return
-            except self.errors as exc:
+            except Exception as exc:
+                if not isinstance(exc, self.errors):
+                    raise
                 if retries >= self.count >= 0:
                     raise
                 time.sleep(self.interval)

@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 import calendar
 import datetime
 import math
+import sys
 
 try:
     import colorama
@@ -121,7 +122,7 @@ except ImportError:
 
     terminal_size = collections.namedtuple('terminal_size', 'columns lines')
 
-    try:
+    if sys.platform == 'win32':
         from ctypes import WinError, create_string_buffer, windll
 
         _handle_ids = {
@@ -146,8 +147,7 @@ except ImportError:
                 return terminal_size(columns, lines)
             else:
                 raise WinError()
-
-    except ImportError:
+    else:
         import fcntl
         import termios
 
@@ -189,7 +189,10 @@ except ImportError:
         # Only query if necessary
         if columns <= 0 or lines <= 0:
             try:
-                size = _get_terminal_size(sys.__stdout__.fileno())
+                stdout = sys.__stdout__
+                if stdout is None:
+                    raise OSError('stdout unavailable')
+                size = _get_terminal_size(stdout.fileno())
             except (NameError, OSError):
                 size = terminal_size(*fallback)
 

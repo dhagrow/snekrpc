@@ -6,6 +6,7 @@ import io
 import os
 import pkgutil
 from collections.abc import Generator
+from typing import BinaryIO
 
 from .. import logs
 
@@ -35,7 +36,7 @@ def discard_file(path: str) -> None:
             raise
 
 
-def iter_file(fp: io.BufferedReader, chunk_size: int | None = None) -> Generator[bytes, None, None]:
+def iter_file(fp: BinaryIO, chunk_size: int | None = None) -> Generator[bytes, None, None]:
     """Iterate through a file object in chunks."""
     size = chunk_size or io.DEFAULT_BUFFER_SIZE
     while chunk := fp.read(size):

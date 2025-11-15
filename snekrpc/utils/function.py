@@ -8,7 +8,7 @@ import tokenize
 from collections import OrderedDict
 from inspect import Parameter as Param
 from inspect import signature
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from .. import errors
 from .encoding import to_unicode
@@ -80,7 +80,7 @@ def _hint_to_str(hint: Any | None) -> str:
 
 def func_to_dict(func: Callable[..., Any], remove_self: bool = False) -> dict[str, Any]:
     data: dict[str, Any] = {'name': func.__name__, 'doc': func.__doc__}
-    cmd_meta = copy.deepcopy(getattr(func, '_meta', {}))
+    cmd_meta = cast(dict[str, Any], copy.deepcopy(getattr(func, '_meta', {})))
     cmd_params = cmd_meta.pop('params', {})
 
     sig = signature(func)
@@ -106,8 +106,10 @@ def func_to_dict(func: Callable[..., Any], remove_self: bool = False) -> dict[st
         meta.setdefault('kind', int(Param.KEYWORD_ONLY))
         params.append(meta)
 
-    if 'stream' in cmd_meta:
-        data['stream'] = cmd_meta.pop('stream')
+    stream_name = cmd_meta.get('stream')
+    if stream_name is not None:
+        data['stream'] = stream_name
+        del cmd_meta['stream']
 
     if inspect.isgeneratorfunction(func):
         data['isgen'] = True

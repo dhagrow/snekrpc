@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 from threading import Event, Lock
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar
 
 from . import errors, logs
 from .utils.path import import_package
 
 log = logs.get(__name__)
 
-_metaclasses: dict[str, type['RegistryMeta[Any]']] = {}
+_metaclasses: dict[str, type['RegistryMeta']] = {}
 _init_lock = Lock()
 _initialized = Event()
-
-T = TypeVar('T')
 
 
 def init() -> None:
@@ -27,8 +25,8 @@ def init() -> None:
         _initialized.set()
 
 
-class RegistryMeta(type[T]):
-    registry: ClassVar[dict[str, type[T] | Exception]] = {}
+class RegistryMeta(type):
+    registry: ClassVar[dict[str, type[Any] | Exception]] = {}
 
     def __init__(cls, name: str, bases: tuple[type, ...], namespace: dict[str, Any]) -> None:
         super().__init__(name, bases, namespace)
@@ -40,7 +38,7 @@ class RegistryMeta(type[T]):
             log.debug('registered %s: %s', cls.__module__.split('.', 1)[1], reg_name)
 
     @classmethod
-    def get(cls, name: str) -> type[T]:
+    def get(cls, name: str) -> type[Any]:
         _initialized.wait()
         entry = cls.registry[name]
         if isinstance(entry, Exception):
@@ -59,8 +57,8 @@ class RegistryMeta(type[T]):
             cls.registry[modname] = exc
 
 
-def create_metaclass(meta_name: str) -> type[RegistryMeta[Any]]:
-    class Meta(RegistryMeta[Any]):
+def create_metaclass(meta_name: str) -> type[RegistryMeta]:
+    class Meta(RegistryMeta):
         registry: ClassVar[dict[str, type[Any] | Exception]] = {}
 
     _metaclasses[meta_name] = Meta

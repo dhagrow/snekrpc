@@ -11,7 +11,7 @@ from h2 import events as ev
 from h2.config import H2Configuration
 from h2.connection import H2Connection
 
-from .. import __version__, logs, param, utils
+from .. import __version__, errors, logs, param, utils
 from . import Connection, Transport
 
 BACKLOG = socket.SOMAXCONN
@@ -36,7 +36,7 @@ class HTTP2Connection(Connection):
         sock.sendall(con.data_to_send())
 
         # the server needs to keep track of the request's stream_id
-        self._stream_id = None
+        self._stream_id: int | None = None
         self._events = []
 
         log.debug('connected: %s', self.url)
@@ -53,9 +53,12 @@ class HTTP2Connection(Connection):
         while True:
             if not events:
                 # recieve new events
-                data = sock.recv(CHUNK_SIZE)
+                try:
+                    data = sock.recv(CHUNK_SIZE)
+                except OSError as exc:  # pragma: no cover - network errors
+                    raise errors.TransportError(exc) from exc
                 if not data:
-                    return
+                    return b''
                 events.extend(con.receive_data(data))
 
             # process current events
@@ -100,10 +103,12 @@ class HTTP2ServerConnection(HTTP2Connection):
             interface, sock, url, chunk_size, client_side=False
         )
 
-        self._initiated = False
+        self._initiated: int | None = None
 
     def initiate(self):
         stream_id = self._stream_id
+        if stream_id is None:
+            raise errors.TransportError(ValueError('missing stream id'))
         if self._initiated == stream_id:
             return
 
@@ -114,7 +119,10 @@ class HTTP2ServerConnection(HTTP2Connection):
 
         con = self._con
         con.send_headers(stream_id, headers)
-        self._sock.sendall(con.data_to_send())
+        try:
+            self._sock.sendall(con.data_to_send())
+        except OSError as exc:  # pragma: no cover - network errors
+            raise errors.TransportError(exc) from exc
 
         self._initiated = stream_id
 
@@ -122,18 +130,27 @@ class HTTP2ServerConnection(HTTP2Connection):
         self.initiate()
 
         stream_id = self._stream_id
+        if stream_id is None:
+            raise errors.TransportError(ValueError('missing stream id'))
         con = self._con
         con.send_data(stream_id, data)
 
-        self._sock.sendall(con.data_to_send())
+        try:
+            self._sock.sendall(con.data_to_send())
+        except OSError as exc:  # pragma: no cover - network errors
+            raise errors.TransportError(exc) from exc
 
     def version(self):
         return '{}/{} {}'.format(SERVER_NAME, __version__, self._ifc.version)
 
     def close(self):
         con = self._con
-        con.end_stream(self._stream_id)
-        self._sock.sendall(con.data_to_send())
+        if self._stream_id is not None:
+            con.end_stream(self._stream_id)
+        try:
+            self._sock.sendall(con.data_to_send())
+        except OSError as exc:  # pragma: no cover - network errors
+            raise errors.TransportError(exc) from exc
         super(HTTP2ServerConnection, self).close()
 
 
@@ -154,7 +171,10 @@ class HTTP2ClientConnection(HTTP2Connection):
         con.send_headers(stream_id, headers)
         con.send_data(stream_id, data)
 
-        self._sock.sendall(con.data_to_send())
+        try:
+            self._sock.sendall(con.data_to_send())
+        except OSError as exc:  # pragma: no cover - network errors
+            raise errors.TransportError(exc) from exc
 
 
 class HTTP2Transport(Transport):
@@ -169,8 +189,12 @@ class HTTP2Transport(Transport):
         super(HTTP2Transport, self).__init__(url)
         url = self._url
 
-        self._addr = (url.host, url.port)
-        self._sock = None
+        host = url.host
+        port = url.port
+        if host is None or port is None:
+            raise ValueError('url must include host and port')
+        self._addr = (host, port)
+        self._sock: socket.socket | None = None
 
         self.timeout = timeout
         self.backlog = backlog or BACKLOG
@@ -194,16 +218,19 @@ class HTTP2Transport(Transport):
         return HTTP2ClientConnection(client, s, self._url.netloc, self.chunk_size)
 
     def bind(self):
-        self._sock = s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(ACCEPT_TIMEOUT)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(self._addr)
-        s.listen(self.backlog)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(ACCEPT_TIMEOUT)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(self._addr)
+        sock.listen(self.backlog)
+        self._sock = sock
 
     def serve(self, server):
         self.bind()
         log.info('listening: %s', self.url)
 
+        if self._sock is None:
+            raise RuntimeError('transport socket not initialized')
         s = self._sock
 
         ctx = None

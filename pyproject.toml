@@ -5,6 +5,7 @@ authors = [
     { name = "Miguel Turner", email = "cymrow (at) gmail.com" },
 ]
 dependencies = [
+    "h2>=4.3.0",
     "msgpack>=1.0.8",
     "temporenc>=0.1.0",
 ]
@@ -42,7 +43,7 @@ docstring-code-format = true
 
 [tool.pyrefly]
 python-version = "3.10"
-paths = ["snekrpc", "tests"]
+project-excludes = ["tests/**"]
 
 [dependency-groups]
 dev = [

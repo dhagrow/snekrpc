@@ -41,15 +41,25 @@ def collect_source(root_path):
             yield src_path, dst_path
 
 
+def _get_module_path(name):
+    loader = pkgutil.get_loader(name)
+    if loader is None:
+        raise ImportError(f'could not load module: {name}')
+    get_filename = getattr(loader, 'get_filename', None)
+    if not get_filename:
+        raise ImportError(f'loader for {name} has no filename')
+    return get_filename()
+
+
 def pack(root_path, output_path, services, compresslevel):
     paths = list(collect_source(root_path))
 
     for package in PACKAGES:
-        modpath = pkgutil.get_loader(package).get_filename()
+        modpath = _get_module_path(package)
         paths += list(collect_source(os.path.dirname(modpath)))
 
     for service in services:
-        modpath = pkgutil.get_loader(service).get_filename()
+        modpath = _get_module_path(service)
         modname = os.path.basename(modpath)
         paths.append((modpath, os.path.join('snekrpc/service', modname)))
 

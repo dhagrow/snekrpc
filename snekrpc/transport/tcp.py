@@ -62,8 +62,9 @@ class TcpTransport(Transport):
     ) -> None:
         super().__init__(url)
         target = self._url
-
-        self._addr = (target.host, target.port)
+        host = target.host or utils.url.DEFAULT_HOST
+        port = target.port or utils.url.DEFAULT_PORT
+        self._addr = (host, port)
         self._sock: socket.socket | None = None
 
         self.timeout = timeout
@@ -156,6 +157,8 @@ def recv(sock: socket.socket, chunk_size: int | None = None) -> bytes:
         return b''.join(recviter(sock, chunk_size))
     except errors.ReceiveInterrupted:
         return b''
+    except OSError as exc:
+        raise errors.TransportError(exc) from exc
 
 
 def recviter(sock: socket.socket, chunk_size: int | None = None):

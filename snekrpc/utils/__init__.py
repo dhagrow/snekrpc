@@ -6,7 +6,7 @@ from typing import Any, Callable, TypeVar
 from .. import logs
 
 # Imports for convenience
-from . import encoding, format, function, path, retry, url
+from . import encoding, format, function as _function, path, retry, url
 
 DEFAULT_URL = 'tcp://127.0.0.1:12321'
 
@@ -33,6 +33,8 @@ def start_thread(func: Func, *args: Any, **kwargs: Any) -> threading.Thread:
     thread.start()
     return thread
 
+
+function: Any = _function
 
 __all__ = [
     'DEFAULT_URL',

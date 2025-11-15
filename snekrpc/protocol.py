@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import traceback
-from collections.abc import Iterable
+from collections.abc import Iterable, MutableMapping
 from typing import TYPE_CHECKING, Any
 
 from . import errors, logs, utils
@@ -17,11 +17,14 @@ log = logs.get(__name__)
 
 class Protocol:
     def __init__(
-        self, interface: Interface, con: Connection, metadata: dict[str, Any] | None = None
+        self,
+        interface: Any,
+        con: Connection,
+        metadata: MutableMapping[str, Any] | None = None,
     ) -> None:
         self._ifc = interface
         self._con = con
-        self.metadata = metadata or {}
+        self.metadata: MutableMapping[str, Any] = metadata or {}
 
     @property
     def local_url(self):
@@ -96,8 +99,8 @@ class Protocol:
             )
 
         stream = None
-        send_args = []
-        send_kwargs = {}
+        send_args: list[Any] = []
+        send_kwargs: dict[str, Any] = {}
 
         for arg in args:
             if inspect.isgenerator(arg):
@@ -112,7 +115,7 @@ class Protocol:
                 stream = arg
             send_kwargs[name] = arg
 
-        args = send_args
+        args = tuple(send_args)
         kwargs = send_kwargs
 
         self._con.send_msg(Op.command, (svc_name, cmd_name, args, kwargs))
@@ -121,6 +124,8 @@ class Protocol:
             self.send_stream(stream)
 
         msg = self._con.recv_msg()
+        if msg is None:
+            raise errors.ReceiveInterrupted()
 
         if msg.op == Op.data:
             return msg.data

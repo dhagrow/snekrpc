@@ -4,7 +4,7 @@ import socketserver
 from http import client, server
 from typing import Any
 
-from .. import __version__, logs, param, utils
+from .. import __version__, errors, logs, param, utils
 from . import Connection, Transport
 
 SERVER_NAME = 'snekrpc'
@@ -55,20 +55,20 @@ class HTTPTransport(Transport):
     ):
         super().__init__(url)
         target = self._url
-        self._addr = (target.host, target.port)
+        host = target.host or '127.0.0.1'
+        if target.port is None:
+            raise ValueError('url must include a port')
+        self._addr = (host, target.port)
 
         self.headers = headers or {}
         self.version = version
         self._server: ThreadingHTTPServer | None = None
 
-    def connect(self, client_ifc: Any) -> 'HTTPClientConnection':
-        return HTTPClientConnection(client_ifc, utils.url.format_addr(self._addr))
+    def connect(self, client: Any) -> 'HTTPClientConnection':
+        return HTTPClientConnection(client, utils.url.format_addr(self._addr))
 
-    def serve(self, server_ifc: Any) -> None:
-        self._server = ThreadingHTTPServer(self._addr, self.Handler)
-        self._server._headers = self.headers
-        self._server._version = self.version
-        self._server._interface = server_ifc
+    def serve(self, server: Any) -> None:
+        self._server = ThreadingHTTPServer(self._addr, self.Handler, self.headers, self.version, server)
 
         log.info('listening: %s', self.url)
         self._server.serve_forever()
@@ -86,6 +86,19 @@ class HTTPTransport(Transport):
 
 class ThreadingHTTPServer(socketserver.ThreadingMixIn, server.HTTPServer):
     daemon_threads = True
+
+    def __init__(
+        self,
+        server_address: tuple[str, int],
+        RequestHandlerClass: type[HTTPHandler],
+        headers: dict[str, str],
+        version: str | None,
+        interface: Any,
+    ) -> None:
+        super().__init__(server_address, RequestHandlerClass)
+        self._headers = headers
+        self._version = version
+        self._interface = interface
 
     def handle_error(self, request, client_address) -> None:
         log.exception('request error (%s)', utils.url.format_addr(client_address))
@@ -111,18 +124,28 @@ class HTTPClientConnection(Connection):
         con.endheaders()
 
     def recv(self) -> bytes:
-        if not self._res:
-            self._res = self._con.getresponse()
-        rfile = self._res.fp
+        try:
+            if not self._res:
+                self._res = self._con.getresponse()
+            rfile = self._res.fp
 
-        line = rfile.readline()
-        chunk_len = int(line[:-2], 16)
-        return rfile.read(chunk_len + 2)[:-2]
+            line = rfile.readline()
+            if not line:
+                raise errors.ReceiveInterrupted()
+            chunk_len = int(line[:-2], 16)
+            return rfile.read(chunk_len + 2)[:-2]
+        except errors.ReceiveInterrupted:
+            return b''
+        except OSError as exc:  # pragma: no cover - network errors
+            raise errors.TransportError(exc) from exc
 
     def send(self, data: bytes) -> None:
-        con = self._con
-        con.send(f'{len(data):X}\r\n'.encode('ascii'))
-        con.send(data + b'\r\n')
+        try:
+            con = self._con
+            con.send(f'{len(data):X}\r\n'.encode('ascii'))
+            con.send(data + b'\r\n')
+        except OSError as exc:  # pragma: no cover - network errors
+            raise errors.TransportError(exc) from exc
 
     def close(self) -> None:
         log.debug('disconnected: %s', self.url)
@@ -138,13 +161,13 @@ class HTTPServerConnection(Connection):
 
         log.debug('connected: %s', self.url)
 
-    def recv(self) -> bytes | None:
+    def recv(self) -> bytes:
         rfile = self.handler.rfile
 
         line = rfile.readline()
         if not line:
             self.should_close = True
-            return None
+            return b''
         chunk_len = int(line[:-2], 16)
         return rfile.read(chunk_len + 2)[:-2]
 

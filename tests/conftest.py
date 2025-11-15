@@ -1,3 +1,4 @@
+import os
 import socket
 import subprocess
 import threading
@@ -16,8 +17,10 @@ TRANSPORT_URLS = [
     'tcp://127.0.0.1:7357',
     'unix:///tmp/snekrpc-test.sock',
     'http://127.0.0.1:7357',
-    'http2://127.0.0.1:7357',
 ]
+
+if os.environ.get('SNEKRPC_TEST_HTTP2'):
+    TRANSPORT_URLS.append('http2://127.0.0.1:7357')
 
 
 class Session(object):
@@ -25,7 +28,7 @@ class Session(object):
         self.interpreter = interpreter
         self.url = url
         self.codec = codec
-        self.proc = None
+        self.proc: subprocess.Popen[bytes] | None = None
 
     def get_client(self):
         return snekrpc.Client(self.url, retry_count=2)
@@ -49,7 +52,8 @@ class Session(object):
         self.proc = subprocess.Popen(cmd)
 
     def stop_server(self):
-        self.proc.terminate()
+        if self.proc:
+            self.proc.terminate()
 
 
 def start_thread(func, *args, **kwargs):

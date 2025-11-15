@@ -100,7 +100,7 @@ class ServiceProxy:
         return wrap_call(self, cmd_name)
 
     def __dir__(self) -> list[str]:
-        return list(self._commands.keys()) + super().__dir__()
+        return list(self._commands.keys()) + list(super().__dir__())
 
 
 def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None = None):
@@ -128,21 +128,32 @@ def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None
             proxy._client.close()
             raise
 
-    def call_wrap(*args: Any, **kwargs: Any):
+    def call_value(*args: Any, **kwargs: Any):
         gen = call(*args, **kwargs)
         isgen = next(gen)
-        return iter(StreamInitiator(gen)) if isgen else next(gen)
+        if isgen:
+            raise errors.ParameterError('unexpected stream result')
+        return next(gen)
+
+    def call_stream(*args: Any, **kwargs: Any):
+        gen = call(*args, **kwargs)
+        isgen = next(gen)
+        if not isgen:
+            raise errors.ParameterError('expected stream result')
+        return iter(StreamInitiator(gen))
 
     if cmd_def and cmd_def.get('isgen'):
         def retry_wrap(*args: Any, **kwargs: Any):
-            return proxy._retry.call_gen(call_wrap, *args, **kwargs)
+            return proxy._retry.call_gen(call_stream, *args, **kwargs)
+        callback = call_stream
     else:
         def retry_wrap(*args: Any, **kwargs: Any):
-            return proxy._retry.call(call_wrap, *args, **kwargs)
+            return proxy._retry.call(call_value, *args, **kwargs)
+        callback = call_value
 
     if not cmd_def:
         return retry_wrap
-    return utils.function.dict_to_func(cmd_def, retry_wrap)
+    return utils.function.dict_to_func(cmd_def, callback)
 
 
 class StreamInitiator:

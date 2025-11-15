@@ -64,7 +64,14 @@ def decode(obj: MutableMapping[str, Encodable]) -> Encodable:
 
 
 def encode_datetime(obj: datetime.datetime) -> dict[str, bytes]:
-    return {'__datetime__': temporenc.packb(obj)}
+    data = temporenc.packb(obj)
+    if data is None:
+        raise ValueError('temporenc.packb returned None')
+    if isinstance(data, bytes):
+        return {'__datetime__': data}
+    if isinstance(data, bytearray):
+        return {'__datetime__': bytes(data)}
+    raise TypeError(f'unsupported temporenc result: {type(data).__name__}')
 
 
 def decode_datetime(obj: Mapping[str, bytes]) -> datetime.datetime:

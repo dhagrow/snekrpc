@@ -11,7 +11,12 @@ class MsgpackCodec(Codec):
     _name_ = 'msgpack'
 
     def encode(self, msg: Any) -> bytes:
-        return msgpack.packb(msg, use_bin_type=True, default=encode)
+        data = msgpack.packb(msg, use_bin_type=True, default=encode)
+        if isinstance(data, bytes):
+            return data
+        if isinstance(data, bytearray):
+            return bytes(data)
+        raise TypeError(f'unsupported msgpack result: {type(data).__name__}')
 
     def decode(self, data: bytes) -> Any:
         return msgpack.unpackb(data, use_list=True, raw=False, object_hook=decode)

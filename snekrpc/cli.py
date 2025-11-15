@@ -7,7 +7,7 @@ import os
 import stat
 import sys
 from collections.abc import Callable
-from typing import Any
+from typing import Any, BinaryIO, cast
 
 from . import codec, errors, formatter, interface, logs, registry, service, transport, utils
 from .utils.function import Param
@@ -62,12 +62,14 @@ class Parser:
             }[args.list]
 
             # select an output formatter
+            fmt = None
             try:
                 fmt = formatter.get(args.format)
             except Exception as e:
                 if args.verbose:
                     raise
-                parser.error(e)
+                parser.error(str(e))
+            assert fmt is not None
 
             fmt.process(meta.names())
             return
@@ -125,6 +127,7 @@ class Parser:
         )
 
         # get service metadata
+        svcs: list[dict[str, Any]] | None = None
         try:
             meta = client.service('_meta')
 
@@ -146,6 +149,10 @@ class Parser:
                 raise
             err = '{}\nconnection required for help on remote services'
             parser.error(err.format(e))
+
+        if svcs is None:
+            # parser.error exits above, but keep type-checkers happy.
+            raise AssertionError('unreachable')
 
         # add services
         svc_subs = parser.add_subparsers(title='remote services')
@@ -176,12 +183,14 @@ class Parser:
             parser.exit()
 
         # select an output formatter
+        fmt: Any | None = None
         try:
             fmt = formatter.get(args.format)
         except Exception as e:
             if args.verbose:
                 raise
-            parser.error(e)
+            parser.error(str(e))
+        assert fmt is not None
 
         # get the command arguments
         verbose = args.verbose
@@ -193,12 +202,14 @@ class Parser:
         func = getattr(svc, args.cmd_name)
 
         # call the command
+        res: Any | None = None
         try:
             res = func(*cmd_args, **cmd_kwargs)
         except errors.RemoteError as e:
             if verbose:
                 raise
-            parser.error(e)
+            parser.error(str(e))
+        assert res is not None
         fmt.process(res)
 
     def start_server(
@@ -310,9 +321,7 @@ class Parser:
             'failed to load transport: {}'.format(exc),
         )
 
-    def add_command_args(
-        self, parser: argparse.ArgumentParser, cmd: CommandMeta, single_flags: bool = True
-    ) -> None:
+    def add_command_args(self, parser: Any, cmd: CommandMeta, single_flags: bool = True) -> None:
         def is_option_arg(param: CommandMeta) -> bool:
             return param['kind'] == Param.VAR_KEYWORD or 'default' in param
 
@@ -359,9 +368,7 @@ class Parser:
                 )
                 parser.add_argument(name, **kwargs)
 
-    def add_option_arg(
-        self, parser: argparse.ArgumentParser, param: CommandMeta, chars: set[str] | None = None
-    ) -> None:
+    def add_option_arg(self, parser: Any, param: CommandMeta, chars: set[str] | None = None) -> None:
         name = param['name']
         kind = param['kind']
         hint = param.get('hint')
@@ -592,7 +599,8 @@ class Parser:
                 return utils.encoding.to_bytes(value)
         elif hint == 'stream':
             def conv(value: str):
-                return utils.path.iter_file(argparse.FileType('rb')(value))
+                fp = cast(BinaryIO, argparse.FileType('rb')(value))
+                return utils.path.iter_file(fp)
         elif hint == 'keyword':
             def conv(value: str) -> Any:
                 return value.split('=', 1)

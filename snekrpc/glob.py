@@ -8,8 +8,6 @@ import fnmatch
 import os
 import re
 
-import scandir
-
 __all__ = ['escape', 'glob', 'iglob']
 
 
@@ -133,7 +131,7 @@ def _iterdir(dirname, dironly):
         else:
             dirname = os.curdir
     try:
-        for entry in scandir.scandir(dirname):
+        for entry in os.scandir(dirname):
             try:
                 if not dironly or entry.is_dir():
                     yield entry.name

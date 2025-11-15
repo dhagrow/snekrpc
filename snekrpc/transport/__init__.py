@@ -89,6 +89,8 @@ class Connection:
         self.send(buf)
 
         buf = self.recv()
+        if not buf:
+            raise errors.TransportError(errors.ReceiveInterrupted())
         op, codec = struct.unpack(f'>B{len(buf) - 1}s', buf)
         if op != Op.handshake:
             raise errors.ProtocolOpError(op)
