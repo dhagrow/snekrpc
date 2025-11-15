@@ -2,7 +2,7 @@
 name = "snekrpc"
 version = "0.7.0"
 authors = [
-    { name = "Miguel Turner", email = "mturner@beta.team" },
+    { name = "Miguel Turner", email = "cymrow (at) gmail.com" },
 ]
 dependencies = [
     "msgpack>=1.0.8",
@@ -10,30 +10,6 @@ dependencies = [
 ]
 readme = "README.md"
 requires-python = ">=3.10"
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.1",
-    "ruff>=0.4.4",
-    "pyrefly>=0.1.0",
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.uv]
-dev-dependencies = [
-    "pytest>=8.1",
-    "ruff>=0.4.4",
-    "pyrefly>=0.1.0",
-]
-
-[tool.uv.scripts]
-format = "ruff format snekrpc tests"
-lint = "ruff check snekrpc tests"
-test = "pytest"
-typecheck = "pyrefly"
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -67,3 +43,10 @@ docstring-code-format = true
 [tool.pyrefly]
 python-version = "3.10"
 paths = ["snekrpc", "tests"]
+
+[dependency-groups]
+dev = [
+    "pyrefly>=0.41.3",
+    "pytest>=9.0.1",
+    "ruff>=0.14.5",
+]
