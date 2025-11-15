@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import sys
-from logging import *
+from logging import DEBUG, INFO, Formatter, StreamHandler, getLogger
+from types import TracebackType
 
 get = getLogger
 log = get(__name__)
 
-def init(debug_level=0, log_exceptions=True):
+
+def init(debug_level: int = 0, log_exceptions: bool = True) -> None:
     """Initializes simple logging defaults."""
     root_log = get()
 
-    # init only once
-    if root_log.handlers: return
+    if root_log.handlers:
+        return
 
     fmt = '%(levelname).1s %(asctime)s . %(message)s'
     formatter = Formatter(fmt)
@@ -20,19 +24,23 @@ def init(debug_level=0, log_exceptions=True):
     root_log.addHandler(handler)
     root_log.setLevel(DEBUG if debug_level > 0 else INFO)
 
-    log = get('snekrpc.transport')
-    log.setLevel(DEBUG if debug_level > 1 else INFO)
+    transport_log = get('snekrpc.transport')
+    transport_log.setLevel(DEBUG if debug_level > 1 else INFO)
 
-    log = get('snekrpc.utils')
-    log.setLevel(DEBUG if debug_level > 1 else INFO)
+    utils_log = get('snekrpc.utils')
+    utils_log.setLevel(DEBUG if debug_level > 1 else INFO)
 
     if log_exceptions:
         sys.excepthook = handle_exception
 
-    # 3rd-party logs
     get('hpack').setLevel(INFO)
 
-def handle_exception(etype, evalue, etb):
+
+def handle_exception(
+    etype: type[BaseException],
+    evalue: BaseException,
+    etb: TracebackType | None,
+) -> None:
     if issubclass(etype, KeyboardInterrupt):
         sys.__excepthook__(etype, evalue, etb)
         return

@@ -1,28 +1,30 @@
-from . import logs
-from . import utils
-from . import errors
-from . import registry
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any
+
+from . import errors, logs, registry, utils
 from .codec import get as get_codec
+from .service import ServiceProxy
+from .service import get as get_service
+from .transport import Connection, Transport
 from .transport import get as get_transport
-from .service import ServiceProxy, get as get_service
+
+if TYPE_CHECKING:
+    from .service import Service
 
 DEFAULT_CODEC = 'msgpack'
 
 log = logs.get(__name__)
 
-class Interface(object):
-    def __init__(self, transport=None, codec=None, version=None):
-        """Base class for client or server interfaces.
 
-        *transport* can be a `transport.Transport` instance, or the name of a
-        registered `transport.Transport` class.
-
-        *codec* can be a `codec.Codec` instance, or the name of a
-        registered `codec.Codec` class.
-
-        *version* is an optional version string for tracking changes.
-        """
-        # initialize all metaclass registries
+class Interface:
+    def __init__(
+        self,
+        transport: str | Transport | None = None,
+        codec: str | Any | None = None,
+        version: str | None = None,
+    ) -> None:
         registry.init()
 
         self.transport = get_transport(transport or utils.DEFAULT_URL)
@@ -30,7 +32,7 @@ class Interface(object):
         self.version = version
 
     @property
-    def url(self):
+    def url(self) -> utils.url.Url:
         return self.transport.url
 
     @property
@@ -38,116 +40,110 @@ class Interface(object):
         return self._codec
 
     @codec.setter
-    def codec(self, codec):
+    def codec(self, codec: str | Any | None) -> None:
         self._codec = codec and get_codec(codec)
         log.debug('codec: %s', self._codec and self._codec._name_)
 
+
 class Client(Interface):
-    def __init__(self, transport=None, codec=None, version=None,
-            retry_count=None, retry_interval=None):
-        super(Client, self).__init__(transport, codec, version)
-
-        self._con = None
-
+    def __init__(
+        self,
+        transport: str | Transport | None = None,
+        codec: str | Any | None = None,
+        version: str | None = None,
+        retry_count: int | None = None,
+        retry_interval: float | None = None,
+    ) -> None:
+        super().__init__(transport, codec, version)
+        self._con: Connection | None = None
         self.retry_count = retry_count
         self.retry_interval = retry_interval
 
-    ## connection ##
-
-    def connect(self):
+    def connect(self) -> Connection:
         if not self._con:
             try:
                 self._con = self.transport.connect(self)
-            except Exception as e:
-                raise errors.TransportError(e)
+            except Exception as exc:
+                raise errors.TransportError(exc) from exc
         return self._con
 
-    def close(self):
+    def close(self) -> None:
         if self._con:
             self._con.close()
         self._con = None
 
-    ## remote services ##
-
-    def __getitem__(self, name):
-        """Convenience access to `service()`."""
+    def __getitem__(self, name: str) -> ServiceProxy:
         return self.service(name)
-    
-    def __getattr__(self, name):
-        """Convenience access to `service()`.
-        
-        Note that this will not work if the service name is that same
-        as a `Client` attribute. Use the `service()` method in those cases.
-        """
+
+    def __getattr__(self, name: str) -> ServiceProxy:
         try:
             return self.service(name)
-        except errors.RemoteError as e:
-            if e.name != 'KeyError':
+        except errors.RemoteError as exc:
+            if exc.name != 'KeyError':
                 raise
-            raise AttributeError(name)
+            raise AttributeError(name) from exc
 
-    def service(self, name, metadata=True):
-        """Returns a `ServiceProxy` instance providing access to a remote
-        service.
-
-        If *metadata* is `True`, retrieves the metadata for the service commands
-        from the remote interface. *metadata* can also be set directly as a list
-        of command metadata.
-        """
+    def service(self, name: str, metadata: bool | Sequence[dict[str, Any]] = True) -> ServiceProxy:
         return ServiceProxy(name, self, metadata)
 
-    def service_names(self):
-        return self.service('_meta').service_names()
+    def service_names(self) -> list[str]:
+        meta = self.service('_meta')
+        return meta.service_names()
+
 
 class Server(Interface):
-    def __init__(self, transport=None, codec=None, version=None,
-            remote_tracebacks=False):
-        super(Server, self).__init__(transport, codec or DEFAULT_CODEC, version)
-
-        self._services = {}
+    def __init__(
+        self,
+        transport: str | Transport | None = None,
+        codec: str | Any | None = None,
+        version: str | None = None,
+        remote_tracebacks: bool = False,
+    ) -> None:
+        super().__init__(transport, codec or DEFAULT_CODEC, version)
+        self._services: dict[str, Service] = {}
         self.add_service('meta', {'server': self}, '_meta')
-
         self.remote_tracebacks = remote_tracebacks
 
-    ## connection ##
-
-    def serve(self):
+    def serve(self) -> None:
         try:
             self.transport.serve(self)
-        except Exception as e:
-            raise errors.TransportError(e)
+        except Exception as exc:
+            raise errors.TransportError(exc) from exc
 
-    def handle(self, con):
+    def handle(self, con: Connection) -> None:
         con.get_protocol().handle()
 
-    def stop(self):
+    def stop(self) -> None:
         self.transport.stop()
 
-    def join(self, timeout=None):
+    def join(self, timeout: float | None = None) -> None:
         self.transport.join(timeout)
 
-    ## local services ##
-
-    def add_service(self, service, service_args=None, alias=None):
-        if service == 'meta': # special case
+    def add_service(
+        self,
+        service: str | Service,
+        service_args: Mapping[str, Any] | None = None,
+        alias: str | None = None,
+    ) -> 'Server':
+        if service == 'meta':
             service_args = {'server': self}
 
         svc = get_service(service, service_args, alias)
+        if not svc._name_:
+            raise ValueError('service must define a name')
         self._services[svc._name_] = svc
-
         log.debug('service added: %s', svc._name_)
-
         return self
 
-    def remove_service(self, name):
+    def remove_service(self, name: str) -> 'Server':
         del self._services[name]
         return self
 
-    def service(self, name):
+    def service(self, name: str) -> Service:
         return self._services[name]
 
-    def services(self):
-        return [self.service(n) for n in self.service_names()]
+    def services(self) -> list[Service]:
+        return [self.service(name) for name in self.service_names()]
 
-    def service_names(self):
-        return [k for k in self._services if k and not k.startswith('_')]
+    def service_names(self) -> list[str]:
+        return [name for name in self._services if name and not name.startswith('_')]

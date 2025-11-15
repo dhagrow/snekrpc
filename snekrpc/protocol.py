@@ -1,18 +1,26 @@
+from __future__ import annotations
+
 import inspect
 import traceback
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
+from . import errors, logs, utils
 from .op import Op
-from . import logs
-from . import utils
-from . import errors
+
+if TYPE_CHECKING:
+    from .interface import Interface
+    from .transport import Connection, Message
 
 log = logs.get(__name__)
 
-class Protocol(object):
-    def __init__(self, interface, con, metadata=None):
+
+class Protocol:
+    def __init__(
+        self, interface: Interface, con: Connection, metadata: dict[str, Any] | None = None
+    ) -> None:
         self._ifc = interface
         self._con = con
-
         self.metadata = metadata or {}
 
     @property
@@ -23,9 +31,7 @@ class Protocol(object):
     def remote_url(self):
         return self._con.url
 
-    ## protocol ##
-
-    def handle(self):
+    def handle(self) -> None:
         recv = self._con.recv_msg
 
         while True:
@@ -34,28 +40,24 @@ class Protocol(object):
 
                 if msg is None:
                     return
-                elif msg.op == Op.command:
+                if msg.op == Op.command:
                     self.recv_cmd(msg)
                 else:
                     raise errors.ProtocolOpError(msg.op)
 
-            except errors.TransportError as e:
-                logger = (log.exception
-                    if log.isEnabledFor(logs.DEBUG) else log.error)
-                logger('transport error (%s): %s',
-                    self.remote_url, utils.format.format_exc(e))
+            except errors.TransportError as exc:
+                logger = log.exception if log.isEnabledFor(logs.DEBUG) else log.error
+                logger('transport error (%s): %s', self.remote_url, utils.format.format_exc(exc))
 
-            except Exception as e:
-                self.send_err(e)
+            except Exception as exc:  # pragma: no cover - best effort reporting
+                self.send_err(exc)
 
-    def recv_cmd(self, msg):
-        """Processes commands received from the remote interface."""
+    def recv_cmd(self, msg: 'Message') -> None:
         svc_name, cmd_name, args, kwargs = msg.data
 
         svc = self._ifc.service(svc_name)
         func = getattr(svc, cmd_name)
 
-        # convert any stream to a generator
         recv_args = []
         recv_kwargs = {}
 
@@ -72,11 +74,12 @@ class Protocol(object):
         kwargs = recv_kwargs
 
         if log.isEnabledFor(logs.DEBUG):
-            log.debug('cmd: %s <- %s',
+            log.debug(
+                'cmd: %s <- %s',
                 utils.format.format_cmd(svc_name, cmd_name, args, kwargs),
-                self.remote_url)
+                self.remote_url,
+            )
 
-        # call
         res = func(*args, **kwargs)
 
         if inspect.isgenerator(res):
@@ -84,14 +87,14 @@ class Protocol(object):
         else:
             self._con.send_msg(Op.data, res)
 
-    def send_cmd(self, svc_name, cmd_name, *args, **kwargs):
-        """Sends a command operation to the remote interface."""
+    def send_cmd(self, svc_name: str, cmd_name: str, *args: Any, **kwargs: Any) -> Any:
         if log.isEnabledFor(logs.DEBUG):
-            log.debug('cmd: %s -> %s',
+            log.debug(
+                'cmd: %s -> %s',
                 utils.format.format_cmd(svc_name, cmd_name, args, kwargs),
-                self.remote_url)
+                self.remote_url,
+            )
 
-        # convert any generator arg to a stream
         stream = None
         send_args = []
         send_kwargs = {}
@@ -99,25 +102,21 @@ class Protocol(object):
         for arg in args:
             if inspect.isgenerator(arg):
                 if stream is not None:
-                    err = 'only one stream param is possible'
-                    raise errors.ParameterError(err)
+                    raise errors.ParameterError('only one stream param is possible')
                 stream = arg
             send_args.append(arg)
         for name, arg in kwargs.items():
             if inspect.isgenerator(arg):
                 if stream is not None:
-                    err = 'only one stream param is possible'
-                    raise errors.ParameterError(err)
+                    raise errors.ParameterError('only one stream param is possible')
                 stream = arg
             send_kwargs[name] = arg
 
         args = send_args
         kwargs = send_kwargs
 
-        # send command
         self._con.send_msg(Op.command, (svc_name, cmd_name, args, kwargs))
 
-        # send stream
         if stream:
             self.send_stream(stream)
 
@@ -125,15 +124,13 @@ class Protocol(object):
 
         if msg.op == Op.data:
             return msg.data
-        elif msg.op == Op.error:
+        if msg.op == Op.error:
             raise errors.RemoteError(*msg.data)
-        elif msg.op == Op.stream_start:
-            # have to return a generator (see service/__init__.py:wrap_call)
+        if msg.op == Op.stream_start:
             return self.recv_stream(started=True)
-        else:
-            raise errors.ProtocolOpError(msg.op)
+        raise errors.ProtocolOpError(msg.op)
 
-    def recv_stream(self, started=False):
+    def recv_stream(self, started: bool = False):
         recv = self._con.recv_msg
 
         if not started:
@@ -147,7 +144,7 @@ class Protocol(object):
             msg = recv()
             if not msg:
                 raise errors.ReceiveInterrupted()
-            elif msg.op == Op.data:
+            if msg.op == Op.data:
                 yield msg.data
             elif msg.op == Op.error:
                 raise errors.RemoteError(*msg.data)
@@ -156,16 +153,16 @@ class Protocol(object):
             else:
                 raise errors.ProtocolOpError(msg.op)
 
-    def send_stream(self, it):
+    def send_stream(self, it: Iterable[Any]) -> None:
         send = self._con.send_msg
         send(Op.stream_start)
-        for x in it:
-            send(Op.data, x)
+        for value in it:
+            send(Op.data, value)
         send(Op.stream_end)
 
-    def send_err(self, e):
-        name = e.__class__.__name__
-        msg = str(e)
+    def send_err(self, exc: BaseException) -> None:
+        name = exc.__class__.__name__
+        msg = str(exc)
         tb = traceback.format_exc().rstrip() if self._ifc.remote_tracebacks else ''
 
         log.exception('%s: %s', name, msg)

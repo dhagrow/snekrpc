@@ -1,11 +1,14 @@
+from __future__ import annotations
+
+from typing import Any
+
+from .. import Client, logs, param
 from . import Service, ServiceProxy
-from .. import Client, param
-from .. import logs
 
 log = logs.get(__name__)
 
+
 class RemoteService(Service, ServiceProxy):
-    """Provides access to a remote service"""
     _name_ = 'remote'
 
     @param('transport')
@@ -14,8 +17,7 @@ class RemoteService(Service, ServiceProxy):
     @param('retry_count', int)
     @param('retry_interval', float)
     @param('kwargs', hide=True)
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs: Any) -> None:
         Service.__init__(self)
         ServiceProxy.__init__(self, name, Client(**kwargs))
-
         log.info('forwarding (%s): %s', name, self._client.url)

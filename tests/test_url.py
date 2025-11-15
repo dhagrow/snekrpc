@@ -1,9 +1,10 @@
 import pytest
 
-from snekrpc.utils.url import Url, DEFAULT_HOST, DEFAULT_PORT
+from snekrpc.utils.url import DEFAULT_HOST, DEFAULT_PORT, Url
 
 TEST_HOST = 'testhost'
 TEST_PORT = 32123
+
 
 def test_copy():
     url = 'tcp://{}:{}'.format(TEST_HOST, TEST_PORT)
@@ -12,6 +13,7 @@ def test_copy():
     u2 = Url(u1)
 
     assert u1 == u2 == url
+
 
 def test_tcp():
     u = Url('tcp://{}:{}'.format(TEST_HOST, TEST_PORT))
@@ -23,6 +25,7 @@ def test_tcp():
     assert u.address == (TEST_HOST, TEST_PORT)
     assert u.netloc == '{}:{}'.format(TEST_HOST, TEST_PORT)
 
+
 def test_http():
     u = Url('http://{}:{}'.format(TEST_HOST, TEST_PORT))
 
@@ -32,6 +35,7 @@ def test_http():
     assert u.path is None
     assert u.address == (TEST_HOST, TEST_PORT)
     assert u.netloc == '{}:{}'.format(TEST_HOST, TEST_PORT)
+
 
 def test_unix_relative():
     path = 'local/path/socket'
@@ -44,6 +48,7 @@ def test_unix_relative():
     assert u.address == path
     assert u.netloc == path
 
+
 def test_unix_absolute():
     path = '/root/path/socket'
     u = Url('unix://{}'.format(path))
@@ -54,6 +59,7 @@ def test_unix_absolute():
     assert u.path == path
     assert u.address == path
     assert u.netloc == path
+
 
 def test_unix_host_only():
     path = 'local'
@@ -66,6 +72,7 @@ def test_unix_host_only():
     assert u.address == path
     assert u.netloc == path
 
+
 def test_host_only():
     u = Url(TEST_HOST)
 
@@ -75,6 +82,7 @@ def test_host_only():
     assert u.path is None
     assert u.address == (TEST_HOST, DEFAULT_PORT)
     assert u.netloc == '{}:{}'.format(TEST_HOST, DEFAULT_PORT)
+
 
 def test_netloc_only():
     u = Url('{}:{}'.format(TEST_HOST, TEST_PORT))
@@ -86,6 +94,7 @@ def test_netloc_only():
     assert u.address == (TEST_HOST, TEST_PORT)
     assert u.netloc == '{}:{}'.format(TEST_HOST, TEST_PORT)
 
+
 def test_port_only():
     u = Url(':32123')
 
@@ -95,6 +104,7 @@ def test_port_only():
     assert u.path is None
     assert u.address == (DEFAULT_HOST, TEST_PORT)
     assert u.netloc == '{}:{}'.format(DEFAULT_HOST, TEST_PORT)
+
 
 def test_asterisk_only():
     u = Url('*')
@@ -106,6 +116,7 @@ def test_asterisk_only():
     assert u.address == ('0.0.0.0', DEFAULT_PORT)
     assert u.netloc == '{}:{}'.format('0.0.0.0', DEFAULT_PORT)
 
+
 def test_asterisk():
     u = Url('tcp://*:{}'.format(TEST_PORT))
 
@@ -116,6 +127,7 @@ def test_asterisk():
     assert u.address == ('0.0.0.0', TEST_PORT)
     assert u.netloc == '{}:{}'.format('0.0.0.0', TEST_PORT)
 
+
 def test_trailing_slash():
     u = Url('{}:{}/'.format(TEST_HOST, TEST_PORT))
 
@@ -125,6 +137,7 @@ def test_trailing_slash():
     assert u.path is None
     assert u.address == (TEST_HOST, TEST_PORT)
     assert u.netloc == '{}:{}'.format(TEST_HOST, TEST_PORT)
+
 
 def test_to_str():
     url = 'tcp://{}:{}'.format(TEST_HOST, TEST_PORT)
@@ -138,6 +151,7 @@ def test_to_str():
     url = 'unix:///root/path/socket'
     u = Url(url)
     assert url == str(u)
+
 
 def test_invalid():
     with pytest.raises(ValueError):

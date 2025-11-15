@@ -2,6 +2,7 @@ import itertools
 
 import snekrpc
 
+
 class TestService(snekrpc.Service):
     _name_ = 'test'
 

@@ -1,36 +1,46 @@
+from __future__ import annotations
+
 import threading
+from typing import Any, Callable, TypeVar
 
 from .. import logs
 
-# imports for convenience
-from . import url
-from . import path
-from . import retry
-from . import compat
-from . import format
-from . import encoding
-from . import function
+# Imports for convenience
+from . import encoding, format, function, path, retry, url
 
 DEFAULT_URL = 'tcp://127.0.0.1:12321'
 
 log = logs.get(__name__)
 
-##
-## threading
-##
+Func = TypeVar('Func', bound=Callable[..., Any])
 
-def start_thread(func, *args, **kwargs):
-    def safe(func, *args, **kwargs):
+
+def start_thread(func: Func, *args: Any, **kwargs: Any) -> threading.Thread:
+    """Start *func* in a daemon thread and return the thread object."""
+
+    def safe(*run_args: Any, **run_kwargs: Any) -> Any:
         tid = threading.current_thread().ident
         log.debug('thread started [%s]: %s', tid, func.__name__)
         try:
-            return func(*args, **kwargs)
-        except Exception:
+            return func(*run_args, **run_kwargs)
+        except Exception:  # pragma: no cover - best effort logging
             log.exception('thread error')
         finally:
             log.debug('thread stopped [%s]: %s', tid, func.__name__)
 
-    t = threading.Thread(target=safe, args=(func,) + args, kwargs=kwargs)
-    t.daemon = True
-    t.start()
-    return t
+    thread = threading.Thread(target=safe, args=args, kwargs=kwargs)
+    thread.daemon = True
+    thread.start()
+    return thread
+
+
+__all__ = [
+    'DEFAULT_URL',
+    'encoding',
+    'format',
+    'function',
+    'path',
+    'retry',
+    'start_thread',
+    'url',
+]

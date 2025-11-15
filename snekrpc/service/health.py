@@ -1,15 +1,18 @@
-import time
+from __future__ import annotations
+
 import itertools
+import time
+from collections.abc import Iterator
 
 from .. import Service, command
 
+
 class HealthService(Service):
-    """Provides basic connectivity commands"""
     _name_ = 'health'
 
     @command()
-    def ping(self, count=1, interval=1.0):
-        it = range(count-1) if count > 0 else itertools.count()
-        for _ in it:
+    def ping(self, count: int = 1, interval: float = 1.0) -> Iterator[None]:
+        iterator = range(count - 1) if count > 0 else itertools.count()
+        for _ in iterator:
             yield
             time.sleep(interval)

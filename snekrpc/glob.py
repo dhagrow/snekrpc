@@ -4,12 +4,14 @@ Modified from Python 3.6 to be Python 2 compatible.
 Depends on scandir library.
 """
 
+import fnmatch
 import os
 import re
-import fnmatch
+
 import scandir
 
-__all__ = ["glob", "iglob", "escape"]
+__all__ = ['escape', 'glob', 'iglob']
+
 
 def glob(pathname):
     """Return a list of paths matching a pathname pattern.
@@ -20,6 +22,7 @@ def glob(pathname):
     patterns.
     """
     return list(iglob(pathname))
+
 
 def iglob(pathname):
     """Return an iterator which yields the paths matching a pathname pattern.
@@ -34,6 +37,7 @@ def iglob(pathname):
         s = next(it)  # skip empty string
         assert not s
     return it
+
 
 def _iglob(pathname, dironly):
     dirname, basename = os.path.split(pathname)
@@ -73,15 +77,18 @@ def _iglob(pathname, dironly):
         for name in glob_in_dir(dirname, basename, dironly):
             yield os.path.join(dirname, name)
 
+
 # These 2 helper functions non-recursively glob inside a literal directory.
 # They return a list of basenames.  _glob1 accepts a pattern while _glob0
 # takes a literal basename (so it only has to check for its existence).
+
 
 def _glob1(dirname, pattern, dironly):
     names = list(_iterdir(dirname, dironly))
     if not _ishidden(pattern):
         names = (x for x in names if not _ishidden(x))
     return fnmatch.filter(names, pattern)
+
 
 def _glob0(dirname, basename, dironly):
     if not basename:
@@ -94,22 +101,28 @@ def _glob0(dirname, basename, dironly):
             return [basename]
     return []
 
+
 # Following functions are not public but can be used by third-party code.
+
 
 def glob0(dirname, pattern):
     return _glob0(dirname, pattern, False)
 
+
 def glob1(dirname, pattern):
     return _glob1(dirname, pattern, False)
 
+
 # This helper function recursively yields relative pathnames inside a literal
 # directory.
+
 
 def _glob2(dirname, pattern, dironly):
     assert _isrecursive(pattern)
     yield pattern[:0]
     for name in _rlistdir(dirname, dironly):
         yield name
+
 
 # If dironly is false, yields all file names inside a directory.
 # If dironly is true, yields only directory names.
@@ -129,6 +142,7 @@ def _iterdir(dirname, dironly):
     except OSError:
         return
 
+
 # Recursively yields relative pathnames inside a literal directory.
 def _rlistdir(dirname, dironly):
     names = list(_iterdir(dirname, dironly))
@@ -143,6 +157,7 @@ def _rlistdir(dirname, dironly):
 magic_check = re.compile('([*?[])')
 magic_check_bytes = re.compile(b'([*?[])')
 
+
 def has_magic(s):
     if isinstance(s, bytes):
         match = magic_check_bytes.search(s)
@@ -150,8 +165,10 @@ def has_magic(s):
         match = magic_check.search(s)
     return match is not None
 
+
 def _ishidden(path):
     return path[0] in ('.', b'.'[0])
+
 
 def _isrecursive(pattern):
     if isinstance(pattern, bytes):
@@ -159,14 +176,14 @@ def _isrecursive(pattern):
     else:
         return pattern == '**'
 
+
 def escape(pathname):
-    """Escape all special characters.
-    """
+    """Escape all special characters."""
     # Escaping is done by wrapping any of "*?[" between square brackets.
     # Metacharacters do not work in the drive part and shouldn't be escaped.
     drive, pathname = os.path.splitdrive(pathname)
     if isinstance(pathname, bytes):
-        pathname = magic_check_bytes.sub(br'[\1]', pathname)
+        pathname = magic_check_bytes.sub(rb'[\1]', pathname)
     else:
         pathname = magic_check.sub(r'[\1]', pathname)
     return drive + pathname

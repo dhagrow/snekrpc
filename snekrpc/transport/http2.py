@@ -1,21 +1,17 @@
 from __future__ import absolute_import
 
-import io
-import ssl
-import errno
-import socket
-import threading
 import collections
+import errno
+import io
+import socket
+import ssl
+import threading
 
 from h2 import events as ev
 from h2.config import H2Configuration
 from h2.connection import H2Connection
 
-from .. import logs
-from .. import utils
-from .. import param
-from .. import __version__
-
+from .. import __version__, logs, param, utils
 from . import Connection, Transport
 
 BACKLOG = socket.SOMAXCONN
@@ -26,6 +22,7 @@ SERVER_NAME = 'snekrpc'
 log = logs.get(__name__)
 
 Request = collections.namedtuple('Request', 'headers data')
+
 
 class HTTP2Connection(Connection):
     def __init__(self, interface, sock, url, chunk_size=None, client_side=True):
@@ -91,15 +88,17 @@ class HTTP2Connection(Connection):
             sock.shutdown(socket.SHUT_RDWR)
         except (OSError, socket.error) as e:
             # ignore if not connected
-            if e.errno not in (errno.ENOTCONN,):# errno.EBADF):
+            if e.errno not in (errno.ENOTCONN,):  # errno.EBADF):
                 raise
         sock.close()
         log.debug('disconnected: %s', self.url)
 
+
 class HTTP2ServerConnection(HTTP2Connection):
     def __init__(self, interface, sock, url, chunk_size=None):
-        super(HTTP2ServerConnection, self).__init__(interface, sock, url,
-            chunk_size, client_side=False)
+        super(HTTP2ServerConnection, self).__init__(
+            interface, sock, url, chunk_size, client_side=False
+        )
 
         self._initiated = False
 
@@ -111,7 +110,7 @@ class HTTP2ServerConnection(HTTP2Connection):
         headers = [
             (':status', '200'),
             ('server', self.version()),
-            ]
+        ]
 
         con = self._con
         con.send_headers(stream_id, headers)
@@ -129,8 +128,7 @@ class HTTP2ServerConnection(HTTP2Connection):
         self._sock.sendall(con.data_to_send())
 
     def version(self):
-        return '{}/{} {}'.format(
-            SERVER_NAME, __version__, self._ifc.version)
+        return '{}/{} {}'.format(SERVER_NAME, __version__, self._ifc.version)
 
     def close(self):
         con = self._con
@@ -138,18 +136,18 @@ class HTTP2ServerConnection(HTTP2Connection):
         self._sock.sendall(con.data_to_send())
         super(HTTP2ServerConnection, self).close()
 
+
 class HTTP2ClientConnection(HTTP2Connection):
     def __init__(self, interface, sock, url, chunk_size=None):
-        super(HTTP2ClientConnection, self).__init__(interface, sock, url,
-            chunk_size)
+        super(HTTP2ClientConnection, self).__init__(interface, sock, url, chunk_size)
 
     def send(self, data):
         headers = [
             (':method', 'POST'),
             (':authority', 'localhost'),
             (':scheme', 'http'),
-            (':path', '/')
-            ]
+            (':path', '/'),
+        ]
 
         con = self._con
         stream_id = con.get_next_available_stream_id()
@@ -158,14 +156,16 @@ class HTTP2ClientConnection(HTTP2Connection):
 
         self._sock.sendall(con.data_to_send())
 
+
 class HTTP2Transport(Transport):
     _name_ = 'http2'
 
     @param('backlog', int, default=BACKLOG)
     @param('chunk_size', int, default=CHUNK_SIZE)
     @param('ssl_key', doc='server-side only')
-    def __init__(self, url, timeout=None, backlog=None, chunk_size=None,
-            ssl_cert=None, ssl_key=None):
+    def __init__(
+        self, url, timeout=None, backlog=None, chunk_size=None, ssl_cert=None, ssl_key=None
+    ):
         super(HTTP2Transport, self).__init__(url)
         url = self._url
 

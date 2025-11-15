@@ -1,36 +1,39 @@
-from __future__ import print_function
+from __future__ import annotations
 
-import inspect
 import importlib
+import inspect
+from typing import Any
 
-from .. import utils
 from .. import registry
 
 FormatterMeta = registry.create_metaclass(__name__)
 
-def get(name, **kwargs):
-    """Returns an instance of the Formatter matching *name*."""
+
+def get(name: str | 'Formatter', **kwargs: Any) -> 'Formatter':
     if isinstance(name, Formatter):
         return name
     cls = load(name) if '.' in name else FormatterMeta.get(name)
     return cls(**kwargs)
 
-def load(name):
-    """Imports and returns the Formatter class matching *name*."""
+
+def load(name: str):
     mod_name, cls_name = name.rsplit('.', 1)
     mod = importlib.import_module(mod_name)
     return getattr(mod, cls_name)
 
-class Formatter(utils.compat.with_metaclass(FormatterMeta, object)):
-    def process(self, res):
+
+class Formatter(metaclass=FormatterMeta):
+    _name_: str | None = None
+
+    def process(self, res: Any) -> None:
         if inspect.isgenerator(res):
-            for r in res:
-                self.print(r)
+            for value in res:
+                self.print(value)
         else:
             self.print(res)
 
-    def print(self, res):
+    def print(self, res: Any) -> None:
         print(self.format(res))
 
-    def format(self, res):
+    def format(self, res: Any) -> Any:
         return res

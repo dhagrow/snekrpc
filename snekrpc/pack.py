@@ -1,7 +1,7 @@
+import argparse
 import os
 import pkgutil
 import zipfile
-import argparse
 
 from . import logs
 
@@ -13,6 +13,7 @@ PACKAGES = frozenset(['msgpack', 'temporenc'])
 
 log = logs.get(__name__)
 
+
 def exclude(name):
     if name.startswith('.'):
         return True
@@ -21,6 +22,7 @@ def exclude(name):
     elif name in EXCLUDE:
         return True
     return False
+
 
 def collect_source(root_path):
     dst_root_path = os.path.dirname(root_path)
@@ -38,6 +40,7 @@ def collect_source(root_path):
 
             yield src_path, dst_path
 
+
 def pack(root_path, output_path, services, compresslevel):
     paths = list(collect_source(root_path))
 
@@ -54,8 +57,7 @@ def pack(root_path, output_path, services, compresslevel):
         fp.write(SHELL_HEADER)
 
         log.debug('compression level set to: %s', compresslevel)
-        zfp = zipfile.ZipFile(fp, 'a', zipfile.ZIP_DEFLATED,
-            compresslevel=compresslevel)
+        zfp = zipfile.ZipFile(fp, 'a', zipfile.ZIP_DEFLATED, compresslevel=compresslevel)
         with zfp:
             fpath = '__main__.py'
             log.debug('adding: %s', fpath)
@@ -68,15 +70,26 @@ def pack(root_path, output_path, services, compresslevel):
     os.chmod(output_path, 0o744)
     log.info('packed script written to: %s', output_path)
 
+
 def add_arguments(parser):
     parser.add_argument('output', help='path for the output file')
-    parser.add_argument('-s', '--service',
-        action='append', dest='services', default=[],
-        help='a service module to include (can be set multiple times)')
-    parser.add_argument('-c', '--compression-level', type=int, default=0,
-        help='level of compression to apply (0-9) (default: %(default)s)')
-    parser.add_argument('-v', '--verbose', action='count',
-        default=0, help='enable verbose output')
+    parser.add_argument(
+        '-s',
+        '--service',
+        action='append',
+        dest='services',
+        default=[],
+        help='a service module to include (can be set multiple times)',
+    )
+    parser.add_argument(
+        '-c',
+        '--compression-level',
+        type=int,
+        default=0,
+        help='level of compression to apply (0-9) (default: %(default)s)',
+    )
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='enable verbose output')
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -87,6 +100,7 @@ def main():
     logs.init(args.verbose)
 
     pack('./snekrpc', args.output, args.services, args.compression_level)
+
 
 if __name__ == '__main__':
     try:

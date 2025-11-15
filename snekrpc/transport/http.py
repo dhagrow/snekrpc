@@ -1,112 +1,105 @@
-from __future__ import absolute_import
+from __future__ import annotations
 
-try: # py3
-    import socketserver
-    from http import client
-    from http import server
-except ImportError: # py2
-    import httplib as client
-    import BaseHTTPServer as server
-    import SocketServer as socketserver
+import socketserver
+from http import client, server
+from typing import Any
 
-from .. import logs
-from .. import utils
-from .. import param
-from .. import __version__
-
+from .. import __version__, logs, param, utils
 from . import Connection, Transport
 
 SERVER_NAME = 'snekrpc'
 
 log = logs.get(__name__)
 
-# BaseRequestHandler is remarkably not an object in Py2
-class HTTPHandler(server.BaseHTTPRequestHandler, object):
+
+class HTTPHandler(server.BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
 
-    def do_POST(self):
-        # handle command
-        ifc = self.server._interface
-        con = HTTPServerConnection(
-            ifc, utils.url.format_addr(self.client_address), self)
+    def do_POST(self) -> None:
+        ifc = self.server._interface  # type: ignore[attr-defined]
+        con = HTTPServerConnection(ifc, utils.url.format_addr(self.client_address), self)
         with con:
             while not con.should_close:
                 ifc.handle(con)
 
-    def start_response(self):
-        # start response
+    def start_response(self) -> None:
         self.send_response(200)
         self.send_header('Connection', 'keep-alive')
-        # TODO: set the content-type based on the codec used
         self.send_header('Content-Type', 'application/octet-stream')
         self.send_header('Transfer-Encoding', 'chunked')
 
-        # user headers
-        for k, v in self.server._headers.items():
-            self.send_header(k, v)
+        for key, value in self.server._headers.items():  # type: ignore[attr-defined]
+            self.send_header(key, value)
         self.end_headers()
 
-    def version_string(self):
-        return self.server._version or '{}/{} {}'.format(SERVER_NAME,
-            __version__, self.server._interface.version or '').strip()
+    def version_string(self) -> str:
+        interface = self.server._interface  # type: ignore[attr-defined]
+        version = self.server._version  # type: ignore[attr-defined]
+        return version or f'{SERVER_NAME}/{__version__} {interface.version or ""}'.strip()
 
-    def log_request(self, code='-', size='-'):
+    def log_request(self, code: str | int = '-', size: str | int = '-') -> None:
         url = utils.url.format_addr(self.client_address)
         log.debug('%r %s <- %s', self.requestline, code, url)
+
 
 class HTTPTransport(Transport):
     _name_ = 'http'
     Handler = HTTPHandler
 
     @param('headers', dict)
-    def __init__(self, url, headers=None, version=None):
-        super(HTTPTransport, self).__init__(url)
-        url = self._url
-        self._addr = (url.host, url.port)
+    def __init__(
+        self,
+        url: str | utils.url.Url,
+        headers: dict[str, str] | None = None,
+        version: str | None = None,
+    ):
+        super().__init__(url)
+        target = self._url
+        self._addr = (target.host, target.port)
 
-        self.headers = headers
+        self.headers = headers or {}
         self.version = version
+        self._server: ThreadingHTTPServer | None = None
 
-    def connect(self, client):
-        return HTTPClientConnection(client, utils.url.format_addr(self._addr))
+    def connect(self, client_ifc: Any) -> 'HTTPClientConnection':
+        return HTTPClientConnection(client_ifc, utils.url.format_addr(self._addr))
 
-    def serve(self, server):
+    def serve(self, server_ifc: Any) -> None:
         self._server = ThreadingHTTPServer(self._addr, self.Handler)
-        self._server._headers = self.headers or {}
+        self._server._headers = self.headers
         self._server._version = self.version
-        self._server._interface = server
+        self._server._interface = server_ifc
 
         log.info('listening: %s', self.url)
-        # XXX: expose poll_interval for config?
         self._server.serve_forever()
 
-    def stop(self):
-        # close the server's socket
+    def stop(self) -> None:
+        if not self._server:
+            return
         self._server.server_close()
-        # stop the serve loop
         self._server.shutdown()
 
-    def join(self, timeout=None):
-        # ideally we could pass the timeout to the __is_shut_down Event here
-        pass
+    def join(self, timeout: float | None = None) -> None:
+        # Blocking handled by HTTPServer internally.
+        return
+
 
 class ThreadingHTTPServer(socketserver.ThreadingMixIn, server.HTTPServer):
     daemon_threads = True
 
-    def handle_error(self, request, client_address):
+    def handle_error(self, request, client_address) -> None:
         log.exception('request error (%s)', utils.url.format_addr(client_address))
 
+
 class HTTPClientConnection(Connection):
-    def __init__(self, client_ifc, url):
-        super(HTTPClientConnection, self).__init__(client_ifc, url)
-
-        self._res = None
-
-        self._con = con = client.HTTPConnection(url)
-        con.auto_open = False
+    def __init__(self, client_ifc: Any, url: str) -> None:
+        super().__init__(client_ifc, url)
+        self._res: client.HTTPResponse | None = None
+        self._con = http = client.HTTPConnection(url)
+        http.auto_open = False
         self.connect()
 
-    def connect(self):
+    def connect(self) -> None:
         con = self._con
         con.connect()
         log.debug('connected: %s', self.url)
@@ -117,29 +110,27 @@ class HTTPClientConnection(Connection):
         con.putheader('Transfer-Encoding', 'chunked')
         con.endheaders()
 
-    def recv(self):
+    def recv(self) -> bytes:
         if not self._res:
             self._res = self._con.getresponse()
         rfile = self._res.fp
 
         line = rfile.readline()
         chunk_len = int(line[:-2], 16)
-
-        # +2 for the trailing newline (not included in chunk_len)
         return rfile.read(chunk_len + 2)[:-2]
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
         con = self._con
-
-        con.send('{:X}\r\n'.format(len(data)).encode('ascii'))
+        con.send(f'{len(data):X}\r\n'.encode('ascii'))
         con.send(data + b'\r\n')
 
-    def close(self):
+    def close(self) -> None:
         log.debug('disconnected: %s', self.url)
 
+
 class HTTPServerConnection(Connection):
-    def __init__(self, server, url, handler):
-        super(HTTPServerConnection, self).__init__(server, url)
+    def __init__(self, server_ifc: Any, url: str, handler: HTTPHandler) -> None:
+        super().__init__(server_ifc, url)
 
         self.handler = handler
         self.response_started = False
@@ -147,7 +138,7 @@ class HTTPServerConnection(Connection):
 
         log.debug('connected: %s', self.url)
 
-    def recv(self):
+    def recv(self) -> bytes | None:
         rfile = self.handler.rfile
 
         line = rfile.readline()
@@ -155,21 +146,17 @@ class HTTPServerConnection(Connection):
             self.should_close = True
             return None
         chunk_len = int(line[:-2], 16)
-
-        # +2 for the trailing newline (not included in chunk_len)
         return rfile.read(chunk_len + 2)[:-2]
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
         if not self.response_started:
             self.handler.start_response()
             self.response_started = True
 
         wfile = self.handler.wfile
-
-        # send chunked
-        wfile.write('{:X}\r\n'.format(len(data)).encode('ascii'))
+        wfile.write(f'{len(data):X}\r\n'.encode('ascii'))
         wfile.write(data + b'\r\n')
 
-    def close(self):
+    def close(self) -> None:
         self.handler.wfile.flush()
         log.debug('disconnected: %s', self.url)

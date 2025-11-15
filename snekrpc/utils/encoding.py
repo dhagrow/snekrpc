@@ -1,38 +1,32 @@
-try:
-    from collections.abc import Iterable
-except ImportError:
-    from collections import Iterable
+from __future__ import annotations
 
-from .compat import str, viewitems
+from collections.abc import Iterable, Mapping
+from typing import Any
 
-def to_bytes(s, encoding='utf8'):
-    if isinstance(s, bytes):
-        pass
-    elif isinstance(s, str):
-        s = s.encode(encoding)
-    elif isinstance(s, dict):
-        s = {to_bytes(k, encoding): to_bytes(v, encoding)
-            for k, v in viewitems(s)}
-    elif isinstance(s, Iterable):
-        s = [to_bytes(x, encoding) for x in s]
-    return s
 
-def to_unicode(s, encoding='utf8', dict_keys_only=False):
-    """Attempts to decode all encountered bytes to unicode.
+def to_bytes(value: Any, encoding: str = 'utf8') -> Any:
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, str):
+        return value.encode(encoding)
+    if isinstance(value, Mapping):
+        return {to_bytes(k, encoding): to_bytes(v, encoding) for k, v in value.items()}
+    if isinstance(value, Iterable):
+        return [to_bytes(item, encoding) for item in value]
+    return value
 
-    *s* can be any standard data structure.
 
-    If *dict_keys_only* is `True`, only the keys of a dict will be decoded.
-    Values will remain untouched.
-    """
-    if isinstance(s, bytes):
-        s = s.decode(encoding)
-    elif isinstance(s, str):
-        pass
-    elif isinstance(s, dict):
-        s = {to_unicode(k, encoding):
-            v if dict_keys_only else to_unicode(v, encoding)
-            for k, v in viewitems(s)}
-    elif isinstance(s, Iterable):
-        s = tuple(to_unicode(x, encoding) for x in s)
-    return s
+def to_unicode(value: Any, encoding: str = 'utf8', dict_keys_only: bool = False) -> Any:
+    """Decode bytes within complex data structures to Python strings."""
+    if isinstance(value, bytes):
+        return value.decode(encoding)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Mapping):
+        return {
+            to_unicode(k, encoding): (v if dict_keys_only else to_unicode(v, encoding))
+            for k, v in value.items()
+        }
+    if isinstance(value, Iterable):
+        return tuple(to_unicode(item, encoding) for item in value)
+    return value
