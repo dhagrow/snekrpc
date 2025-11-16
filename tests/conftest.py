@@ -2,16 +2,14 @@ import os
 import socket
 import subprocess
 import threading
+import sys
 
 import pytest
 
 import snekrpc
-from snekrpc import utils
 
 SERVICE_NAME = 'test'
 
-PYTHON2 = utils.path.base_path('.venv2/bin/python')
-PYTHON3 = utils.path.base_path('.venv3/bin/python')
 
 TRANSPORT_URLS = [
     'tcp://127.0.0.1:7357',
@@ -19,11 +17,8 @@ TRANSPORT_URLS = [
     'http://127.0.0.1:7357',
 ]
 
-if os.environ.get('SNEKRPC_TEST_HTTP2'):
-    TRANSPORT_URLS.append('http2://127.0.0.1:7357')
 
-
-class Session(object):
+class Session:
     def __init__(self, interpreter, url, codec):
         self.interpreter = interpreter
         self.url = url
@@ -78,9 +73,9 @@ def codec(request):
     return request.param
 
 
-@pytest.fixture(scope='session', params=[PYTHON2, PYTHON3])
-def session(request, url, codec):
-    s = Session(request.param, url, codec)
+@pytest.fixture(scope='session')
+def session(url, codec):
+    s = Session(sys.executable, url, codec)
     s.start_server()
     yield s
     s.stop_server()

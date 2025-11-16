@@ -6,7 +6,7 @@ import sys
 from typing import Any, TYPE_CHECKING
 
 import pytest
-from funcsigs import Parameter as Param
+from inspect import Parameter as Param
 
 if TYPE_CHECKING:
     function: Any

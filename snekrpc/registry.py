@@ -35,7 +35,7 @@ class RegistryMeta(type):
             if reg_name in cls.registry:
                 raise errors.RegistryError(f'already registered: {reg_name}')
             cls.registry[reg_name] = cls
-            log.debug('registered %s: %s', cls.__module__.split('.', 1)[1], reg_name)
+            log.debug('registered %s: %s', f'{cls.__module__}.{name}', reg_name)
 
     @classmethod
     def get(cls, name: str) -> type[Any]:

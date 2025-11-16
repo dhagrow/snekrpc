@@ -368,7 +368,9 @@ class Parser:
                 )
                 parser.add_argument(name, **kwargs)
 
-    def add_option_arg(self, parser: Any, param: CommandMeta, chars: set[str] | None = None) -> None:
+    def add_option_arg(
+        self, parser: Any, param: CommandMeta, chars: set[str] | None = None
+    ) -> None:
         name = param['name']
         kind = param['kind']
         hint = param.get('hint')
@@ -589,19 +591,24 @@ class Parser:
     def get_converter(self, hint: str | None) -> Callable[[str], Any]:
         """Returns a type converter keyed to a specific typehint."""
         if hint == 'int':
+
             def conv(value: str) -> Any:
                 return int(value)
         elif hint == 'float':
+
             def conv(value: str) -> Any:
                 return float(value)
         elif hint == 'bytes':
+
             def conv(value: str) -> Any:
                 return utils.encoding.to_bytes(value)
         elif hint == 'stream':
+
             def conv(value: str):
                 fp = cast(BinaryIO, argparse.FileType('rb')(value))
                 return utils.path.iter_file(fp)
         elif hint == 'keyword':
+
             def conv(value: str) -> Any:
                 return value.split('=', 1)
         elif hint == 'datetime':
@@ -618,6 +625,7 @@ class Parser:
                             datetime.datetime.strptime(v, TIME_FORMAT).time(),
                         )
         elif hint == 'stream':
+
             def conv(value: str):
                 return (x for x in value)
         elif hint in COLLECTION_TYPES:
@@ -629,6 +637,7 @@ class Parser:
                 except Exception:
                     return json.loads(v)
         else:
+
             def conv(value: str) -> Any:
                 return utils.encoding.to_unicode(value)
 

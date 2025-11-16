@@ -33,8 +33,6 @@ def init(debug_level: int = 0, log_exceptions: bool = True) -> None:
     if log_exceptions:
         sys.excepthook = handle_exception
 
-    get('hpack').setLevel(INFO)
-
 
 def handle_exception(
     etype: type[BaseException],
