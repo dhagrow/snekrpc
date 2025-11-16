@@ -68,7 +68,9 @@ class HTTPTransport(Transport):
         return HTTPClientConnection(client, utils.url.format_addr(self._addr))
 
     def serve(self, server: Any) -> None:
-        self._server = ThreadingHTTPServer(self._addr, self.Handler, self.headers, self.version, server)
+        self._server = ThreadingHTTPServer(
+            self._addr, self.Handler, self.headers, self.version, server
+        )
 
         log.info('listening: %s', self.url)
         self._server.serve_forever()
