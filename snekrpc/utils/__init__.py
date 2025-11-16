@@ -6,7 +6,8 @@ from typing import Any, Callable, TypeVar
 from .. import logs
 
 # Imports for convenience
-from . import encoding, format, function as _function, path, retry, url
+from . import encoding, format, path, retry, url
+from . import function as _function
 
 DEFAULT_URL = 'tcp://127.0.0.1:12321'
 

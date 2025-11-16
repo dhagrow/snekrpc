@@ -3,10 +3,10 @@
 import contextlib
 import inspect
 import sys
-from typing import Any, TYPE_CHECKING
+from inspect import Parameter as Param
+from typing import TYPE_CHECKING, Any
 
 import pytest
-from inspect import Parameter as Param
 
 if TYPE_CHECKING:
     function: Any

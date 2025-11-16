@@ -1,6 +1,7 @@
 import snekrpc
 from snekrpc import logs
 
+
 def main():
     logs.init()
 

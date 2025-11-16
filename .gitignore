@@ -6,3 +6,4 @@ __pycache__/
 .jj/
 *.pyc
 .python-version
+.mise.toml

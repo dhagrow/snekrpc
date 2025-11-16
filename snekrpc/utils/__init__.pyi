@@ -1,5 +1,5 @@
-from typing import Any, Callable, TypeVar
 import threading
+from typing import Any, Callable, TypeVar
 
 DEFAULT_URL: str
 encoding: Any
