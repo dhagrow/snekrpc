@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .. import errors, logs, protocol, registry, utils
-from ..op import Op
+from ..protocol import Op
 
 TransportMeta = registry.create_metaclass(__name__)
 
