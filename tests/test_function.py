@@ -43,6 +43,7 @@ class F(object):
 
     # SyntaxError on Python < 3.8
     if TYPE_CHECKING:
+
         def positional_only(self, a):
             return a
     else:

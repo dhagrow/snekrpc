@@ -11,6 +11,7 @@ def main():
     s = c.service('ex')
     print(s.echo('asdf'))
 
+
 if __name__ == '__main__':
     try:
         main()
