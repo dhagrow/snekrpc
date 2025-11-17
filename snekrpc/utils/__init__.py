@@ -1,22 +1,19 @@
 from __future__ import annotations
 
 import threading
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable
 
 from .. import logs
 
 # Imports for convenience
-from . import encoding, format, path, retry, url
-from . import function as _function
+from . import encoding, format, function, path, retry, url
 
 DEFAULT_URL = 'tcp://127.0.0.1:12321'
 
 log = logs.get(__name__)
 
-Func = TypeVar('Func', bound=Callable[..., Any])
 
-
-def start_thread(func: Func, *args: Any, **kwargs: Any) -> threading.Thread:
+def start_thread(func: Callable[..., Any], *args: Any, **kwargs: Any) -> threading.Thread:
     """Start *func* in a daemon thread and return the thread object."""
 
     def safe(*run_args: Any, **run_kwargs: Any) -> Any:
@@ -24,7 +21,7 @@ def start_thread(func: Func, *args: Any, **kwargs: Any) -> threading.Thread:
         log.debug('thread started [%s]: %s', tid, func.__name__)
         try:
             return func(*run_args, **run_kwargs)
-        except Exception:  # pragma: no cover - best effort logging
+        except Exception:
             log.exception('thread error')
         finally:
             log.debug('thread stopped [%s]: %s', tid, func.__name__)
@@ -34,8 +31,6 @@ def start_thread(func: Func, *args: Any, **kwargs: Any) -> threading.Thread:
     thread.start()
     return thread
 
-
-function: Any = _function
 
 __all__ = [
     'DEFAULT_URL',

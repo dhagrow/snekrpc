@@ -65,6 +65,6 @@ def import_module(modname: str, pkgname: str | None = None) -> Exception | None:
             importlib.import_module(f'.{modname}', pkgname)
         else:
             importlib.import_module(modname)
-    except Exception as exc:  # pragma: no cover - import side effects
+    except Exception as exc:
         return exc
     return None

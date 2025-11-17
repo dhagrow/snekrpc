@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .. import errors, logs, protocol, registry, utils
+from ..interface import Interface
 from ..protocol import Op
 
 TransportMeta = registry.create_metaclass(__name__)
@@ -33,16 +34,16 @@ class Transport(metaclass=TransportMeta):
     def url(self) -> utils.url.Url:
         return self._url
 
-    def connect(self, client: Any) -> 'Connection':  # pragma: no cover - abstract
+    def connect(self, client: Any) -> Connection:
         raise NotImplementedError
 
-    def serve(self, server: Any) -> None:  # pragma: no cover - abstract
+    def serve(self, server: Any) -> None:
         raise NotImplementedError
 
-    def stop(self) -> None:  # pragma: no cover - abstract
+    def stop(self) -> None:
         raise NotImplementedError
 
-    def join(self, timeout: float | None = None) -> None:  # pragma: no cover - abstract
+    def join(self, timeout: float | None = None) -> None:
         raise NotImplementedError
 
 
@@ -58,7 +59,7 @@ class Message:
 
 
 class Connection:
-    def __init__(self, interface: Any, addr: str) -> None:
+    def __init__(self, interface: Interface, addr: str) -> None:
         self._ifc = interface
         self._addr = addr
         self._proto = protocol.Protocol(interface, self)
@@ -72,10 +73,10 @@ class Connection:
             self._proto.metadata = metadata
         return self._proto
 
-    def send(self, data: bytes) -> None:  # pragma: no cover - abstract
+    def send(self, data: bytes) -> None:
         raise NotImplementedError
 
-    def recv(self) -> bytes:  # pragma: no cover - abstract
+    def recv(self) -> bytes:
         raise NotImplementedError
 
     def req_handshake(self) -> None:

@@ -5,11 +5,11 @@ import itertools
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-if TYPE_CHECKING:
-    from ..interface import Client
-
 from .. import errors, logs, registry, utils
 from ..utils.encoding import to_unicode
+
+if TYPE_CHECKING:
+    from ..interface import Client
 
 log = logs.get(__name__)
 
@@ -70,9 +70,7 @@ class Service(metaclass=ServiceMeta):
 
 
 class ServiceProxy:
-    def __init__(
-        self, name: str, client: 'Client', metadata: bool | Sequence[dict[str, Any]] = True
-    ):
+    def __init__(self, name: str, client: Client, metadata: bool | Sequence[dict[str, Any]] = True):
         self._svc_name = to_unicode(name)
         self._client = client
         self._commands: dict[str, Callable[..., Any]] = {}
@@ -143,12 +141,16 @@ def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None
         return iter(StreamInitiator(gen))
 
     if cmd_def and cmd_def.get('isgen'):
+
         def retry_wrap(*args: Any, **kwargs: Any):
             return proxy._retry.call_gen(call_stream, *args, **kwargs)
+
         callback = call_stream
     else:
+
         def retry_wrap(*args: Any, **kwargs: Any):
             return proxy._retry.call(call_value, *args, **kwargs)
+
         callback = call_value
 
     if not cmd_def:

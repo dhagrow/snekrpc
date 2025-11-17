@@ -138,7 +138,7 @@ class HTTPClientConnection(Connection):
             return rfile.read(chunk_len + 2)[:-2]
         except errors.ReceiveInterrupted:
             return b''
-        except OSError as exc:  # pragma: no cover - network errors
+        except OSError as exc:
             raise errors.TransportError(exc) from exc
 
     def send(self, data: bytes) -> None:
@@ -146,7 +146,7 @@ class HTTPClientConnection(Connection):
             con = self._con
             con.send(f'{len(data):X}\r\n'.encode('ascii'))
             con.send(data + b'\r\n')
-        except OSError as exc:  # pragma: no cover - network errors
+        except OSError as exc:
             raise errors.TransportError(exc) from exc
 
     def close(self) -> None:

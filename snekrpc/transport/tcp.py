@@ -35,7 +35,7 @@ class TcpConnection(Connection):
     def send(self, data: bytes) -> None:
         try:
             send(self._sock, data)
-        except OSError as exc:  # pragma: no cover - network errors
+        except OSError as exc:
             raise errors.TransportError(exc) from exc
 
     def close(self) -> None:

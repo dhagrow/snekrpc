@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from . import errors, logs, utils
 
 if TYPE_CHECKING:
+    from .interface import Interface
     from .transport import Connection, Message
 
 log = logs.get(__name__)
@@ -32,7 +33,7 @@ class Op:
 class Protocol:
     def __init__(
         self,
-        interface: Any,
+        interface: Interface,
         con: Connection,
         metadata: MutableMapping[str, Any] | None = None,
     ) -> None:
@@ -66,7 +67,7 @@ class Protocol:
                 logger = log.exception if log.isEnabledFor(logs.DEBUG) else log.error
                 logger('transport error (%s): %s', self.remote_url, utils.format.format_exc(exc))
 
-            except Exception as exc:  # pragma: no cover - best effort reporting
+            except Exception as exc:
                 self.send_err(exc)
 
     def recv_cmd(self, msg: 'Message') -> None:

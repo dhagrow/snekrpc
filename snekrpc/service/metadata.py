@@ -4,7 +4,7 @@ from typing import Any
 
 from .. import Service, command, param
 from ..utils.encoding import to_unicode
-from . import service_to_dict as s2d
+from . import service_to_dict
 
 
 class MetadataService(Service):
@@ -30,8 +30,8 @@ class MetadataService(Service):
 
     @command()
     def services(self):
-        return to_unicode([s2d(svc) for svc in self._server.services()])
+        return to_unicode([service_to_dict(svc) for svc in self._server.services()])
 
     @command()
     def service(self, name: str):
-        return to_unicode(s2d(self._server.service(name)))
+        return to_unicode(service_to_dict(self._server.service(name)))

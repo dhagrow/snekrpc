@@ -43,6 +43,7 @@ def main():
 
     s = snekrpc.Server('tcp://localhost:1234')
     s.add_service(Service(), alias='ex')
+    s.add_service('meta')
     s.serve()
 
 
