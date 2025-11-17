@@ -21,7 +21,7 @@ def get(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Codec
 
 
 class Codec(metaclass=CodecMeta):
-    _name_: str | None = None
+    _name_: str
 
     def encode(self, msg: Any) -> bytes:
         raise NotImplementedError('abstract')

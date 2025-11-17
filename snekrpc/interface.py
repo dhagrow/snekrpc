@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from . import errors, logs, protocol, registry, utils
+from .codec import Codec
 from .codec import get as get_codec
 from .service import ServiceProxy
 from .service import get as get_service
@@ -36,12 +37,12 @@ class Interface:
         return self.transport.url
 
     @property
-    def codec(self):
+    def codec(self) -> Codec | None:
         return self._codec
 
     @codec.setter
     def codec(self, codec: str | Any | None) -> None:
-        self._codec = codec and get_codec(codec)
+        self._codec = codec if codec is None else get_codec(codec)
         log.debug('codec: %s', self._codec and self._codec._name_)
 
 

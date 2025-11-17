@@ -104,12 +104,14 @@ class Connection:
         if log.isEnabledFor(logs.DEBUG):
             log.debug('msg: %s <- %s', Message(Op.handshake, None), self._addr)
 
-        name = self._ifc.codec._name_.encode('utf8')
+        codec_name = None if self._ifc.codec is None else self._ifc.codec._name_.encode('utf8')
 
         if log.isEnabledFor(logs.DEBUG):
-            log.debug('msg: %s -> %s', Message(Op.handshake, name), self._addr)
+            log.debug('msg: %s -> %s', Message(Op.handshake, codec_name), self._addr)
 
-        buf = struct.pack(f'>B{len(name)}s', Op.handshake, name)
+        buf = struct.pack(
+            f'>B{0 if codec_name is None else len(codec_name)}s', Op.handshake, codec_name
+        )
         self.send(buf)
         return self.recv()
 
@@ -119,8 +121,10 @@ class Connection:
 
         if not data:
             return None
+        if (codec := self._ifc.codec) is None:
+            raise errors.TransportError('codec was not set by handshake')
 
-        msg = Message(*self._ifc.codec._decode(data))
+        msg = Message(*codec._decode(data))
 
         if log.isEnabledFor(logs.DEBUG):
             log.debug('msg: %s <- %s', msg, self._addr)
@@ -133,7 +137,10 @@ class Connection:
         if log.isEnabledFor(logs.DEBUG):
             log.debug('msg: %s -> %s', Message(op, data), self._addr)
 
-        msg = self._ifc.codec._encode((op, data))
+        if (codec := self._ifc.codec) is None:
+            raise errors.TransportError('codec is not set')
+
+        msg = codec._encode((op, data))
         self.send(msg)
 
     def close(self) -> None:
