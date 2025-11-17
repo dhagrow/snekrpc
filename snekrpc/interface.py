@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-from . import errors, logs, registry, utils
+from . import errors, logs, protocol, registry, utils
 from .codec import get as get_codec
 from .service import ServiceProxy
 from .service import get as get_service
@@ -111,7 +111,7 @@ class Server(Interface):
             raise errors.TransportError(exc) from exc
 
     def handle(self, con: Connection) -> None:
-        con.get_protocol().handle()
+        protocol.Protocol(self, con).handle()
 
     def stop(self) -> None:
         self.transport.stop()

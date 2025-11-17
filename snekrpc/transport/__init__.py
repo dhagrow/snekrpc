@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import struct
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .. import errors, logs, protocol, registry, utils
-from ..interface import Interface
+from .. import errors, logs, registry, utils
 from ..protocol import Op
+
+if TYPE_CHECKING:
+    from ..interface import Interface
 
 TransportMeta = registry.create_metaclass(__name__)
 
@@ -62,16 +64,10 @@ class Connection:
     def __init__(self, interface: Interface, addr: str) -> None:
         self._ifc = interface
         self._addr = addr
-        self._proto = protocol.Protocol(interface, self)
 
     @property
     def url(self) -> str:
         return self._addr
-
-    def get_protocol(self, metadata: MutableMapping[str, Any] | None = None) -> protocol.Protocol:
-        if metadata:
-            self._proto.metadata = metadata
-        return self._proto
 
     def send(self, data: bytes) -> None:
         raise NotImplementedError

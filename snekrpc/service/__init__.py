@@ -5,7 +5,7 @@ import itertools
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-from .. import errors, logs, registry, utils
+from .. import errors, logs, protocol, registry, utils
 from ..utils.encoding import to_unicode
 
 if TYPE_CHECKING:
@@ -105,7 +105,7 @@ def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None
     def call(*args: Any, **kwargs: Any):
         con = proxy._client.connect()
         try:
-            proto = con.get_protocol({proxy._svc_name: proxy._commands})
+            proto = protocol.Protocol(proxy._client, con, {proxy._svc_name: proxy._commands})
 
             res = proto.send_cmd(
                 proxy._svc_name,

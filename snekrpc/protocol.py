@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from . import errors, logs, utils
 
 if TYPE_CHECKING:
-    from .interface import Interface
+    from .interface import Client, Server
     from .transport import Connection, Message
 
 log = logs.get(__name__)
@@ -33,7 +33,7 @@ class Op:
 class Protocol:
     def __init__(
         self,
-        interface: Interface,
+        interface: Client | Server,
         con: Connection,
         metadata: MutableMapping[str, Any] | None = None,
     ) -> None:
