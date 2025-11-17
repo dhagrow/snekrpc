@@ -64,7 +64,7 @@ class FileService(Service):
                 log.warning('could not read file: %s', exc)
                 entry.update(size=None, mtime=None, isfile=None)
 
-            yield utils.encoding.to_unicode(entry, dict_keys_only=True)
+            yield utils.encoding.to_str(entry, dict_keys_only=True)
 
     @command()
     def touch(self, path: str) -> None:

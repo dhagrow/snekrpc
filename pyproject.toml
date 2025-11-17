@@ -12,6 +12,9 @@ requires-python = ">=3.10"
 [tool.uv]
 package = true
 
+[project.scripts]
+snekrpc = "snekrpc.__main__:main"
+
 [tool.hatch.metadata]
 allow-direct-references = true
 

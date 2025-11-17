@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from .. import errors, logs, protocol, registry, utils
-from ..utils.encoding import to_unicode
+from ..utils.encoding import to_str
 
 if TYPE_CHECKING:
     from ..interface import Client
@@ -71,7 +71,7 @@ class Service(metaclass=ServiceMeta):
 
 class ServiceProxy:
     def __init__(self, name: str, client: Client, metadata: bool | Sequence[dict[str, Any]] = True):
-        self._svc_name = to_unicode(name)
+        self._svc_name = to_str(name)
         self._client = client
         self._commands: dict[str, Callable[..., Any]] = {}
 
@@ -109,9 +109,9 @@ def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None
 
             res = proto.send_cmd(
                 proxy._svc_name,
-                to_unicode(cmd_name),
+                to_str(cmd_name),
                 *args,
-                **to_unicode(kwargs, dict_keys_only=True),
+                **to_str(kwargs, dict_keys_only=True),
             )
 
             isgen = inspect.isgenerator(res)

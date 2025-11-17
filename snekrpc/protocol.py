@@ -188,4 +188,4 @@ class Protocol:
         tb = traceback.format_exc().rstrip() if self._ifc.remote_tracebacks else ''
 
         log.exception('%s: %s', name, msg)
-        self._con.send_msg(Op.error, utils.encoding.to_unicode((name, msg, tb)))
+        self._con.send_msg(Op.error, utils.encoding.to_str((name, msg, tb)))

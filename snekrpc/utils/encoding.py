@@ -16,7 +16,7 @@ def to_bytes(value: Any, encoding: str = 'utf8') -> Any:
     return value
 
 
-def to_unicode(value: Any, encoding: str = 'utf8', dict_keys_only: bool = False) -> Any:
+def to_str(value: Any, encoding: str = 'utf8', dict_keys_only: bool = False) -> Any:
     """Decode bytes within complex data structures to Python strings."""
     if isinstance(value, bytes):
         return value.decode(encoding)
@@ -24,9 +24,9 @@ def to_unicode(value: Any, encoding: str = 'utf8', dict_keys_only: bool = False)
         return value
     if isinstance(value, Mapping):
         return {
-            to_unicode(k, encoding): (v if dict_keys_only else to_unicode(v, encoding))
+            to_str(k, encoding): (v if dict_keys_only else to_str(v, encoding))
             for k, v in value.items()
         }
     if isinstance(value, Iterable):
-        return tuple(to_unicode(item, encoding) for item in value)
+        return tuple(to_str(item, encoding) for item in value)
     return value

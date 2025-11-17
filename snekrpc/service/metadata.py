@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .. import Service, command, param
-from ..utils.encoding import to_unicode
+from ..utils.encoding import to_str
 from . import service_to_dict
 
 
@@ -22,7 +22,7 @@ class MetadataService(Service):
             'transport': ifc.transport._name_,
             'version': ifc.version,
         }
-        return to_unicode(res)
+        return to_str(res)
 
     @command()
     def service_names(self) -> list[str]:
@@ -30,8 +30,8 @@ class MetadataService(Service):
 
     @command()
     def services(self):
-        return to_unicode([service_to_dict(svc) for svc in self._server.services()])
+        return to_str([service_to_dict(svc) for svc in self._server.services()])
 
     @command()
     def service(self, name: str):
-        return to_unicode(service_to_dict(self._server.service(name)))
+        return to_str(service_to_dict(self._server.service(name)))

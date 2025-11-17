@@ -11,7 +11,7 @@ from inspect import signature
 from typing import Any, Callable, cast
 
 from .. import errors
-from .encoding import to_unicode
+from .encoding import to_str
 
 _rx_ident = re.compile(rf'^{tokenize.Name}$')
 
@@ -73,9 +73,7 @@ def _hint_to_str(hint: Any | None) -> str:
         name = hint
     else:
         name = hint.__name__
-        if name == 'unicode':
-            name = 'str'
-    return to_unicode(name)
+    return to_str(name)
 
 
 def func_to_dict(func: Callable[..., Any], remove_self: bool = False) -> dict[str, Any]:
@@ -177,4 +175,4 @@ def dict_to_func(data: dict[str, Any], callback: Callable[..., Any]) -> Callable
 
 
 def get_func_name(name: str | None) -> str:
-    return to_unicode(name or 'str')
+    return to_str(name or 'str')
