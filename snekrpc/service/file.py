@@ -38,7 +38,7 @@ class FileService(Service):
         path = os.path.abspath(os.path.normpath(path))
         self._root_path = os.path.join(path, '')
 
-    @command(with_metadata='bool')
+    @command()
     def paths(self, pattern: str | None = None, with_metadata: bool = False):
         pattern = self.check_path(pattern or '*')
         if os.path.isdir(pattern):
@@ -72,7 +72,7 @@ class FileService(Service):
         with open(path, 'a'):
             os.utime(path, None)
 
-    @command(recurse='bool')
+    @command()
     def create_dir(self, path: str, mode: str | None = None, recurse: bool = False) -> None:
         path = self.check_path(path)
         numeric_mode = 0o755 if mode is None else int(mode, 8)
@@ -81,7 +81,7 @@ class FileService(Service):
         else:
             os.mkdir(path, numeric_mode)
 
-    @command(recurse='bool')
+    @command()
     def delete(self, path: str, recurse: bool = False) -> None:
         path = self.check_path(path)
         if os.path.isdir(path):

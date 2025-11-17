@@ -6,12 +6,12 @@ import keyword
 import re
 import tokenize
 from collections import OrderedDict
+from collections.abc import Iterable
 from inspect import Parameter as Param
 from inspect import signature
-from typing import Any, Callable, cast
+from typing import Any, Callable, cast, get_type_hints
 
 from .. import errors
-from .encoding import to_str
 
 _rx_ident = re.compile(rf'^{tokenize.Name}$')
 
@@ -20,17 +20,19 @@ def is_identifier(value: str) -> bool:
     return bool(_rx_ident.match(value)) and value.isidentifier() and not keyword.iskeyword(value)
 
 
-def command(**hints: Any) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def command() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         cmd_meta: dict[str, Any] = func.__dict__.setdefault('_meta', {})
         params: dict[str, dict[str, Any]] = cmd_meta.setdefault('params', {})
-        for name, hint in hints.items():
+
+        for name, hint in get_type_hints(func).items():
             hintstr = _hint_to_str(hint)
             if hintstr == 'stream':
                 if 'stream' in cmd_meta:
                     raise errors.ParameterError(f'only one stream param is possible: {name}')
                 cmd_meta['stream'] = name
             params.setdefault(name, {})['hint'] = hintstr
+
         return func
 
     return decorator
@@ -68,12 +70,12 @@ def param(
 
 def _hint_to_str(hint: Any | None) -> str:
     if hint is None:
-        name = 'str'
-    elif isinstance(hint, (str, bytes)):
-        name = hint
-    else:
-        name = hint.__name__
-    return to_str(name)
+        return 'str'
+    elif (
+        inspect.isclass(hint) and issubclass(hint, Iterable) and not issubclass(hint, (str, bytes))
+    ):
+        return 'stream'
+    return hint.__name__
 
 
 def func_to_dict(func: Callable[..., Any], remove_self: bool = False) -> dict[str, Any]:
@@ -172,7 +174,3 @@ def dict_to_func(data: dict[str, Any], callback: Callable[..., Any]) -> Callable
     func.__doc__ = meta.pop('doc', None)
     func.__dict__['_meta'] = meta
     return func
-
-
-def get_func_name(name: str | None) -> str:
-    return to_str(name or 'str')

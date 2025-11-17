@@ -42,6 +42,15 @@ wheels = [
 ]
 
 [[package]]
+name = "makefun"
+version = "1.16.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/cf/6780ab8bc3b84a1cce3e4400aed3d64b6db7d5e227a2f75b6ded5674701a/makefun-1.16.0.tar.gz", hash = "sha256:e14601831570bff1f6d7e68828bcd30d2f5856f24bad5de0ccb22921ceebc947", size = 73565, upload-time = "2025-05-09T15:00:42.313Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/c0/4bc973defd1270b89ccaae04cef0d5fa3ea85b59b108ad2c08aeea9afb76/makefun-1.16.0-py2.py3-none-any.whl", hash = "sha256:43baa4c3e7ae2b17de9ceac20b669e9a67ceeadff31581007cca20a07bbe42c4", size = 22923, upload-time = "2025-05-09T15:00:41.042Z" },
+]
+
+[[package]]
 name = "msgpack"
 version = "1.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -243,6 +252,7 @@ name = "snekrpc"
 version = "0.7.0"
 source = { editable = "." }
 dependencies = [
+    { name = "makefun" },
     { name = "msgpack" },
     { name = "msgspec" },
     { name = "temporenc" },
@@ -258,6 +268,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "makefun", specifier = ">=1.16.0" },
     { name = "msgpack", specifier = ">=1.0.8" },
     { name = "msgspec", specifier = ">=0.19.0" },
     { name = "temporenc", specifier = ">=0.1.0" },

@@ -26,7 +26,7 @@ class Service(snekrpc.Service):
 
             yield chunk
 
-    @snekrpc.command(data='stream')
+    @snekrpc.command()
     def upload(self, data: Iterable[bytes]) -> None:
         total = 0
         start_t = time.perf_counter()

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .. import Service, command, param
+from ..interface import Server
 from ..utils.encoding import to_str
 from . import service_to_dict
 
@@ -11,14 +12,14 @@ class MetadataService(Service):
     _name_ = 'meta'
 
     @param('server', hide=True)
-    def __init__(self, server: Any) -> None:
+    def __init__(self, server: Server) -> None:
         self._server = server
 
     @command()
     def status(self) -> dict[str, Any]:
         ifc = self._server
         res = {
-            'codec': ifc.codec._name_,
+            'codec': None if ifc.codec is None else ifc.codec._name_,
             'transport': ifc.transport._name_,
             'version': ifc.version,
         }

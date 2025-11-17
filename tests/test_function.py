@@ -4,14 +4,10 @@ import contextlib
 import inspect
 import sys
 from inspect import Parameter as Param
-from typing import TYPE_CHECKING, Any
 
 import pytest
 
-if TYPE_CHECKING:
-    function: Any
-else:
-    from snekrpc.utils import function
+from snekrpc.utils import function
 
 
 @contextlib.contextmanager
@@ -31,8 +27,8 @@ class F(object):
         "default"
         return a
 
-    @function.command(a=bool)
-    def command(self, a):
+    @function.command()
+    def command(self, a: bool):
         "command"
         return a
 
@@ -41,16 +37,9 @@ class F(object):
         for i in range(5):
             yield i
 
-    # SyntaxError on Python < 3.8
-    if TYPE_CHECKING:
-
-        def positional_only(self, a):
-            return a
-    else:
-        try:
-            exec("def positional_only(self, a, /): 'positional_only'; return a")
-        except SyntaxError:
-            pass
+    def positional_only(self, a, /):
+        "positional_only"
+        return a
 
     def var_positional(self, *a):
         "var_positional"

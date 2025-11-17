@@ -650,7 +650,7 @@ class Parser:
                 return utils.encoding.to_str(value)
 
         # the converter name is used in error messages
-        conv.__name__ = utils.function.get_func_name(hint or 'str')
+        conv.__name__ = hint or 'str'
 
         return conv
 
