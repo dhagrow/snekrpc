@@ -96,11 +96,6 @@ class Parser:
 
             self.add_service_args(parser, cls, alias)
 
-        # help
-        if args.help:
-            parser.print_help()
-            parser.exit()
-
         # collect transport and service args
         sub_args = parser.parse_args(extra_args)
         trn_args, svc_args = self.get_prefixed_args(sub_args)
@@ -110,11 +105,27 @@ class Parser:
 
         # start client or server
         if args.server_mode:
+            # help
+            if args.help:
+                parser.print_help()
+                parser.exit()
             if args.rest:
                 parser.error('unrecognized arguments: {}'.format(' '.join(args.rest)))
             self.start_server(trn, args, svc_args)
         else:
-            self.start_client(trn, parser, args)
+            try:
+                self.start_client(trn, parser, args)
+            except Exception as e:
+                err = '{}\nconnection required for help on remote services'
+
+                if args.help:
+                    parser.print_help()
+                    print(err.format(e), file=sys.stderr)
+                    parser.exit()
+
+                if args.verbose:
+                    raise
+                parser.error(err.format(e))
 
     def start_client(
         self, trn: transport.Transport, parser: argparse.ArgumentParser, args: Args
@@ -143,12 +154,6 @@ class Parser:
             if not args.verbose and e.name == 'KeyError':
                 parser.error('metadata service not available')
             raise
-
-        except Exception as e:
-            if args.verbose:
-                raise
-            err = '{}\nconnection required for help on remote services'
-            parser.error(err.format(e))
 
         if svcs is None:
             # parser.error exits above, but keep type-checkers happy.
@@ -213,7 +218,10 @@ class Parser:
         fmt.process(res)
 
     def start_server(
-        self, trn: transport.Transport, args: Args, svc_args: dict[str, dict[str, Any]]
+        self,
+        trn: transport.Transport,
+        args: Args,
+        svc_args: dict[str, dict[str, Any]],
     ) -> None:
         # create server
         s = interface.Server(
