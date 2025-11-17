@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .. import Client, logs, param
+from .. import Client, logs
+from ..transport import Transport
 from . import Service, ServiceProxy
 
 log = logs.get(__name__)
@@ -15,14 +16,18 @@ class RemoteService(Service, ServiceProxy):
 
     _name_ = 'remote'
 
-    @param('transport')
-    @param('codec')
-    @param('version')
-    @param('retry_count', int)
-    @param('retry_interval', float)
-    @param('kwargs', hide=True)
-    def __init__(self, name: str, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        name: str,
+        transport: str | Transport | None = None,
+        codec: str | Any | None = None,
+        version: str | None = None,
+        retry_count: int | None = None,
+        retry_interval: float | None = None,
+    ) -> None:
         """Initialize a nested client and expose it under ``name``."""
         Service.__init__(self)
-        ServiceProxy.__init__(self, name, Client(**kwargs))
+        ServiceProxy.__init__(
+            self, name, Client(transport, codec, version, retry_count, retry_interval)
+        )
         log.info('forwarding (%s): %s', name, self._client.url)

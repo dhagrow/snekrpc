@@ -7,6 +7,8 @@ from snekrpc import logs
 
 
 class Service(snekrpc.Service):
+    """Example service"""
+
     @snekrpc.command()
     def echo(self, value: Any) -> Any:
         return value

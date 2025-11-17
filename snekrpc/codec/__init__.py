@@ -2,12 +2,8 @@
 
 from __future__ import annotations
 
-import datetime
-import inspect
-from collections.abc import Generator, Mapping, MutableMapping
+from collections.abc import Mapping
 from typing import Any
-
-import temporenc
 
 from .. import errors, registry, utils
 
@@ -48,48 +44,3 @@ class Codec(metaclass=CodecMeta):
             return self.decode(data)
         except Exception as exc:
             raise errors.DecodeError(f'{exc}: data={utils.format.elide(repr(data))!r}') from exc
-
-
-def encode(obj: Any) -> Any:
-    """Encode to basic types."""
-    if isinstance(obj, datetime.datetime):
-        return encode_datetime(obj)
-    if inspect.isgenerator(obj):
-        return encode_generator(obj)
-    return obj
-
-
-def decode(obj: MutableMapping[str, Any]) -> Any:
-    """Decode from basic types."""
-    if '__datetime__' in obj:
-        return decode_datetime(obj)
-    if '__generator__' in obj:
-        return decode_generator(obj)
-    return obj
-
-
-def encode_datetime(obj: datetime.datetime) -> dict[str, bytes]:
-    """Serialize datetimes via temporenc with a type marker."""
-    data = temporenc.packb(obj)
-    if data is None:
-        raise ValueError('temporenc.packb returned None')
-    if isinstance(data, bytes):
-        return {'__datetime__': data}
-    if isinstance(data, bytearray):
-        return {'__datetime__': bytes(data)}
-    raise TypeError(f'unsupported temporenc result: {type(data).__name__}')
-
-
-def decode_datetime(obj: Mapping[str, bytes]) -> datetime.datetime:
-    """Restore temporenc-encoded datetime dictionaries."""
-    return temporenc.unpackb(obj['__datetime__']).datetime()
-
-
-def encode_generator(obj: Generator[Any, Any, Any]) -> dict[str, None]:
-    """Mark generator objects so the receiver can request a stream."""
-    return {'__generator__': None}
-
-
-def decode_generator(_: Mapping[str, Any]) -> Generator[Any, None, None]:
-    """Return an empty generator placeholder; stream data arrives separately."""
-    yield from ()

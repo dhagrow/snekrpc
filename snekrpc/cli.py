@@ -9,10 +9,13 @@ import os
 import stat
 import sys
 from collections.abc import Callable
+from inspect import Parameter as Param
 from typing import Any, BinaryIO, cast
 
+import msgspec
+
 from . import codec, errors, formatter, interface, logs, registry, service, transport, utils
-from .utils.function import Param
+from .utils.function import ParameterSpec, SignatureSpec
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 DATE_FORMAT = '%Y-%m-%d'
@@ -144,7 +147,7 @@ class Parser:
         )
 
         # get service metadata
-        svcs: list[dict[str, Any]] | None = None
+        svcs: list[service.ServiceSpec] | None = None
         try:
             meta = client.service('_meta')
 
@@ -154,7 +157,7 @@ class Parser:
                 self.print_status(status)
                 parser.exit()
 
-            svcs = meta.services()
+            svcs = msgspec.convert(meta.services(), list[service.ServiceSpec])
 
         except errors.RemoteError as e:
             if not args.verbose and e.name == 'KeyError':
@@ -168,20 +171,20 @@ class Parser:
         # add services
         svc_subs = parser.add_subparsers(title='remote services')
 
-        for svc in sorted(svcs, key=lambda s: s['name']):
-            svc_name = svc['name']
-            svc_desc = self.get_help(svc['doc'])
-            svc_parser = svc_subs.add_parser(svc_name, help=svc_desc, description=svc['doc'])
+        for svc in sorted(svcs, key=lambda s: s.name):
+            svc_name = svc.name
+            svc_desc = self.get_help(svc.doc)
+            svc_parser = svc_subs.add_parser(svc_name, help=svc_desc, description=svc.doc)
             svc_parser.set_defaults(svc_name=svc_name)
 
             # add service commands
             cmd_subs = svc_parser.add_subparsers(title='commands', dest='command')
             cmd_subs.required = True
 
-            for cmd in svc['commands']:
-                cmd_name = cmd['name']
-                cmd_desc = self.get_help(cmd['doc'])
-                cmd_parser = cmd_subs.add_parser(cmd_name, help=cmd_desc, description=cmd['doc'])
+            for cmd in svc.commands:
+                cmd_name = cmd.name
+                cmd_desc = self.get_help(cmd.doc)
+                cmd_parser = cmd_subs.add_parser(cmd_name, help=cmd_desc, description=cmd.doc)
                 self.add_command_args(cmd_parser, cmd)
                 cmd_parser.set_defaults(cmd_name=cmd_name, cmd_meta=cmd)
 
@@ -266,20 +269,19 @@ class Parser:
     def get_command_args(self, args: Args) -> tuple[list[Any], dict[str, Any]]:
         """Processes the command-line arguments and returns the arguments to
         pass to the selected command."""
-        cmd = args.cmd_meta
+        cmd: SignatureSpec = args.cmd_meta
 
         cmd_args = []
         cmd_kwargs = {}
 
-        for param in cmd['params']:
-            name = param['name']
-            kind = param['kind']
+        for param in cmd.parameters:
+            name = param.name
+            kind = getattr(Param, param.kind)
 
-            if param.get('hide', False):
+            if param.hide:
                 continue
 
-            arg = getattr(args, param['name'])
-
+            arg = getattr(args, param.name)
             if kind in {Param.POSITIONAL_ONLY, Param.POSITIONAL_OR_KEYWORD}:
                 cmd_args.append(arg)
             elif kind == Param.VAR_POSITIONAL:
@@ -289,7 +291,7 @@ class Parser:
             elif kind == Param.KEYWORD_ONLY:
                 cmd_kwargs[name] = arg
             else:
-                raise AssertionError('unsupported argument kind')
+                raise AssertionError(f'unsupported argument kind: {kind}')
 
         return cmd_args, cmd_kwargs
 
@@ -300,14 +302,18 @@ class Parser:
         svc_parser = parser.add_argument_group('{} service arguments'.format(alias))
 
         # add a prefix to every param
-        cmd = utils.function.func_to_dict(cls.__init__, remove_self=True)
-        for param in cmd['params']:
-            param['name'] = '_'.join(['service', alias, param['name']])
-            # force keyword-only params for clarity
-            if param['kind'] != Param.VAR_KEYWORD:
-                param['kind'] = Param.KEYWORD_ONLY
-
-            param.setdefault('default', argparse.SUPPRESS)
+        cmd = utils.function.encode(cls.__init__, remove_self=True)
+        params = []
+        for param in cmd.parameters:
+            param = msgspec.structs.replace(
+                param,
+                name='_'.join(['service', alias, param.name]),
+                # force keyword-only params for clarity
+                kind=param.kind if param.kind == Param.VAR_KEYWORD else Param.KEYWORD_ONLY,
+            )
+            if not param.has_default:
+                param = msgspec.structs.replace(param, default=argparse.SUPPRESS)
+            params.append(param)
 
         self.add_command_args(svc_parser, cmd, single_flags=False)
 
@@ -320,14 +326,19 @@ class Parser:
         )
 
         # add a prefix to every param
-        cmd = utils.function.func_to_dict(cls.__init__, remove_self=True)
-        for param in cmd['params']:
-            if param['name'] in ignored:
-                param['hide'] = True
-            param['name'] = '_'.join(['transport', cls._name_, param['name']])
-            # force keyword-only params for clarity
-            if param['kind'] != Param.VAR_KEYWORD:
-                param['kind'] = Param.KEYWORD_ONLY
+        cmd = utils.function.encode(cls.__init__, remove_self=True)
+        params = []
+        for param in cmd.parameters:
+            params.append(
+                msgspec.structs.replace(
+                    param,
+                    name='_'.join(['transport', cls._name_, param.name]),
+                    # force keyword-only params for clarity
+                    kind=param.kind if param.kind == Param.VAR_KEYWORD else Param.KEYWORD_ONLY,
+                )
+            )
+
+        cmd = msgspec.structs.replace(cmd, parameters=tuple(params))
 
         self.add_command_args(trn_parser, cmd, single_flags=False)
 
@@ -340,41 +351,40 @@ class Parser:
             'failed to load transport: {}'.format(exc),
         )
 
-    def add_command_args(self, parser: Any, cmd: CommandMeta, single_flags: bool = True) -> None:
+    def add_command_args(self, parser: Any, cmd: SignatureSpec, single_flags: bool = True) -> None:
         """Translate command metadata into argparse arguments."""
 
-        def is_option_arg(param: CommandMeta) -> bool:
-            return param['kind'] == Param.VAR_KEYWORD or 'default' in param
+        def is_option_arg(param: ParameterSpec) -> bool:
+            return kind == Param.VAR_KEYWORD or param.has_default
 
         if single_flags:
             # keep track of used single char flags
             chars = set('h')
             # include single char arguments
             chars.update(
-                p['name'] for p in cmd['params'] if len(p['name']) == 1 and not is_option_arg(p)
+                p.name for p in cmd.parameters if len(p.name) == 1 and not is_option_arg(p)
             )
         else:
             chars = None
 
-        for param in cmd['params']:
-            name = param['name']
-            kind = param['kind']
-            hint = param.get('hint')
-            doc = param.get('doc')
-            default = param.get('default', Param.empty)
+        for param in cmd.parameters:
+            name = param.name
+            kind = param.kind
+            hint = param.annotation
+            doc = param.doc
 
-            if param.get('hide', False):
+            if param.hide:
                 continue
 
-            kwargs = {'metavar': name}
+            kwargs: dict[str, Any] = {'metavar': name}
 
-            if default is not Param.empty:
-                kwargs['default'] = default
+            if param.has_default:
+                kwargs['default'] = param.default
 
             if kind in {Param.KEYWORD_ONLY, Param.VAR_KEYWORD}:  # **kwargs
                 self.add_option_arg(parser, param, chars)
 
-            elif 'default' in param:  # args with defaults
+            elif param.has_default:  # args with defaults
                 self.add_option_arg(parser, param, chars)
 
             else:  # positional args
@@ -384,20 +394,20 @@ class Parser:
                 kwargs.update(
                     {
                         'type': self.get_converter(hint),
-                        'help': self.get_argument_help(doc, hint, default),
+                        'help': self.get_argument_help(doc, hint, param.default),
                     }
                 )
                 parser.add_argument(name, **kwargs)
 
     def add_option_arg(
-        self, parser: Any, param: CommandMeta, chars: set[str] | None = None
+        self, parser: Any, param: ParameterSpec, chars: set[str] | None = None
     ) -> None:
         """Add an individual option flag, handling bool/kwargs special cases."""
-        name = param['name']
-        kind = param['kind']
-        hint = param.get('hint')
-        doc = param.get('doc')
-        default = param.get('default')
+        name = param.name
+        kind = param.kind
+        hint = param.annotation
+        doc = param.doc
+        default = param.default
 
         # use dashes instead of underscores for param names
         flag_name = name.replace('_', '-')

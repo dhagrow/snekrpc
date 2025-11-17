@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-import msgpack
+from msgspec import msgpack
 
-from . import Codec, decode, encode
+from . import Codec
 
 
 class MsgpackCodec(Codec):
@@ -16,13 +16,8 @@ class MsgpackCodec(Codec):
 
     def encode(self, msg: Any) -> bytes:
         """Serialize values to msgpack bytes."""
-        data = msgpack.packb(msg, use_bin_type=True, default=encode)
-        if isinstance(data, bytes):
-            return data
-        if isinstance(data, bytearray):
-            return bytes(data)
-        raise TypeError(f'unsupported msgpack result: {type(data).__name__}')
+        return msgpack.encode(msg)
 
     def decode(self, data: bytes) -> Any:
         """Decode msgpack bytes into Python objects."""
-        return msgpack.unpackb(data, use_list=True, raw=False, object_hook=decode)
+        return msgpack.decode(data)

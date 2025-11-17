@@ -7,7 +7,7 @@ from typing import Any
 from .. import Service, command, param
 from ..interface import Server
 from ..utils.encoding import to_str
-from . import service_to_dict
+from . import ServiceSpec, encode
 
 
 class MetadataService(Service):
@@ -37,11 +37,11 @@ class MetadataService(Service):
         return list(self._server.service_names())
 
     @command()
-    def services(self):
-        """Return serialized definitions for every service."""
-        return to_str([service_to_dict(svc) for svc in self._server.services()])
+    def services(self) -> list[ServiceSpec]:
+        """Return metadata for every service."""
+        return [encode(svc) for svc in self._server.services()]
 
     @command()
-    def service(self, name: str):
+    def service(self, name: str) -> ServiceSpec:
         """Return metadata for an individual service."""
-        return to_str(service_to_dict(self._server.service(name)))
+        return encode(self._server.service(name))

@@ -7,6 +7,8 @@ import itertools
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
+import msgspec
+
 from .. import errors, logs, protocol, registry, utils
 from ..utils.encoding import to_str
 
@@ -16,6 +18,14 @@ if TYPE_CHECKING:
 log = logs.get(__name__)
 
 ServiceMeta = registry.create_metaclass(__name__)
+
+
+class ServiceSpec(msgspec.Struct, frozen=True):
+    """Description of a callable signature."""
+
+    name: str
+    doc: str | None
+    commands: tuple[utils.function.SignatureSpec, ...]
 
 
 def parse_alias(name: str) -> tuple[str, str | None]:
@@ -50,22 +60,24 @@ def get(
     return obj
 
 
-def service_to_dict(svc: Service) -> dict[str, Any]:
+def encode(svc: Service) -> ServiceSpec:
     """Serialize a service definition for metadata responses."""
-    f2d = utils.function.func_to_dict
+    func_encode = utils.function.encode
 
-    data: dict[str, Any] = {'name': svc._name_, 'doc': svc.__doc__}
-    data['commands'] = commands = []
-
+    # commands have a `_meta` attribute
+    commands = []
     for name in dir(svc):
         if name.startswith('_'):
             continue
         attr = getattr(svc, name)
-        meta = getattr(attr, '_meta', None)
-        if meta is not None:
-            commands.append(f2d(attr))
+        if getattr(attr, '_meta', None) is not None:
+            commands.append(func_encode(attr))
 
-    return data
+    return ServiceSpec(
+        svc._name_ or svc.__class__.__name__,
+        svc.__doc__,
+        tuple(commands),
+    )
 
 
 class Service(metaclass=ServiceMeta):
@@ -81,8 +93,18 @@ class Service(metaclass=ServiceMeta):
 class ServiceProxy:
     """Client-side helper that exposes remote commands as callables."""
 
-    def __init__(self, name: str, client: Client, metadata: bool | Sequence[dict[str, Any]] = True):
-        """Cache remote service metadata and wrap remote commands."""
+    def __init__(
+        self,
+        name: str,
+        client: Client,
+        command_metadata: bool | Sequence[utils.function.SignatureSpec] = True,
+    ):
+        """Cache remote service metadata and wrap remote commands.
+
+        When `command_metadata` is `True`, metadata will be loaded from the
+        remote metadata service. When `False`, no metadata will be loaded.
+        Otherwise, a sequence of command metadata can be provided directly.
+        """
         self._svc_name = to_str(name)
         self._client = client
         self._commands: dict[str, Callable[..., Any]] = {}
@@ -91,15 +113,15 @@ class ServiceProxy:
             client.retry_count, client.retry_interval, errors=[errors.TransportError], logger=log
         )
 
-        def wrap_command(cmd_def: dict[str, Any]):
-            return wrap_call(self, cmd_def['name'], cmd_def)
+        def wrap_command(spec: utils.function.SignatureSpec):
+            return wrap_call(self, spec.name, spec)
 
-        if metadata is True:
-            meta = ServiceProxy('_meta', client, metadata=False)
-            svc = meta.service(self._svc_name)
-            self._commands.update({c['name']: wrap_command(c) for c in svc['commands']})
-        elif metadata:
-            self._commands.update({c['name']: wrap_command(c) for c in metadata})
+        if command_metadata is True:
+            meta = ServiceProxy('_meta', client, command_metadata=False)
+            svc = msgspec.convert(meta.service(self._svc_name), ServiceSpec)
+            self._commands.update({c.name: wrap_command(c) for c in svc.commands})
+        elif command_metadata:
+            self._commands.update({c.name: wrap_command(c) for c in command_metadata})
 
     def __getattr__(self, cmd_name: str) -> Callable[..., Any]:
         """Return a cached callable or lazily wrap the remote command."""
@@ -115,7 +137,9 @@ class ServiceProxy:
         return list(self._commands.keys()) + list(super().__dir__())
 
 
-def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None = None):
+def wrap_call(
+    proxy: ServiceProxy, cmd_name: str, cmd_spec: utils.function.SignatureSpec | None = None
+):
     """Wrap a remote call in retry logic, handling stream outputs."""
 
     def call(*args: Any, **kwargs: Any):
@@ -123,12 +147,7 @@ def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None
         try:
             proto = protocol.Protocol(proxy._client, con, {proxy._svc_name: proxy._commands})
 
-            res = proto.send_cmd(
-                proxy._svc_name,
-                to_str(cmd_name),
-                *args,
-                **to_str(kwargs, dict_keys_only=True),
-            )
+            res = proto.send_cmd(proxy._svc_name, cmd_name, *args, **kwargs)
 
             isgen = inspect.isgenerator(res)
             yield isgen
@@ -156,22 +175,22 @@ def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None
             raise errors.ParameterError('expected stream result')
         return iter(StreamInitiator(gen))
 
-    if cmd_def and cmd_def.get('isgen'):
+    if cmd_spec and cmd_spec.is_generator:
 
         def retry_wrap(*args: Any, **kwargs: Any):
-            return proxy._retry.call_gen(call_stream, *args, **kwargs)
+            yield from proxy._retry.call_gen(call_stream, *args, **kwargs)
 
-        callback = call_stream
+        callback = retry_wrap
     else:
 
         def retry_wrap(*args: Any, **kwargs: Any):
             return proxy._retry.call(call_value, *args, **kwargs)
 
-        callback = call_value
+        callback = retry_wrap
 
-    if not cmd_def:
+    if not cmd_spec:
         return retry_wrap
-    return utils.function.dict_to_func(cmd_def, callback)
+    return utils.function.decode(cmd_spec, callback)
 
 
 class StreamInitiator:

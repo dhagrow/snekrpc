@@ -84,7 +84,9 @@ class Client(Interface):
                 raise
             raise AttributeError(name) from exc
 
-    def service(self, name: str, metadata: bool | Sequence[dict[str, Any]] = True) -> ServiceProxy:
+    def service(
+        self, name: str, metadata: bool | Sequence[utils.function.SignatureSpec] = True
+    ) -> ServiceProxy:
         return ServiceProxy(name, self, metadata)
 
     def service_names(self) -> list[str]:

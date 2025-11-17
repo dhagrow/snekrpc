@@ -70,9 +70,9 @@ class F(object):
 
 def test_roundtrip():
     f1 = F().mixed_params
-    d1 = function.func_to_dict(f1)
-    f2 = function.dict_to_func(d1, f1)
-    d2 = function.func_to_dict(f2)
+    d1 = function.encode(f1)
+    f2 = function.decode(d1, f1)
+    d2 = function.encode(f2)
 
     assert d1 == d2
     assert f1(1, 2, 3, 4, d=5, e=6) == f2(1, 2, 3, 4, d=5, e=6)
@@ -80,9 +80,9 @@ def test_roundtrip():
 
 def test_roundtrip_generator():
     f1 = F().stream
-    d1 = function.func_to_dict(f1)
-    f2 = function.dict_to_func(d1, f1)
-    d2 = function.func_to_dict(f2)
+    d1 = function.encode(f1)
+    f2 = function.decode(d1, f1)
+    d2 = function.encode(f2)
 
     assert d1 == d2
     assert inspect.isgeneratorfunction(f1)
@@ -91,7 +91,7 @@ def test_roundtrip_generator():
 
 
 ##
-## dict_to_func tests
+## decode tests
 ##
 
 
@@ -101,7 +101,7 @@ def test_d2f_null():
         'name': 'null',
         'params': [],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -116,7 +116,7 @@ def test_d2f_positional():
         'doc': 'positional',
         'params': [{'name': 'a', 'kind': 1}],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -131,7 +131,7 @@ def test_d2f_default():
         'doc': 'default',
         'params': [{'name': 'a', 'kind': 1, 'default': None}],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -147,7 +147,7 @@ def test_d2f_command():
         'doc': 'command',
         'params': [{'name': 'a', 'hint': 'bool', 'kind': 1}],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -163,7 +163,7 @@ def test_d2f_stream():
         'isgen': True,
         'params': [],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -180,7 +180,7 @@ def test_d2f_positional_only():
         'doc': 'positional_only',
         'params': [{'name': 'a', 'kind': 0}],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -198,7 +198,7 @@ def test_d2f_var_positional():
         'doc': 'var_positional',
         'params': [{'name': 'a', 'kind': 2}],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -215,7 +215,7 @@ def test_d2f_var_keyword():
         'doc': 'var_keyword',
         'params': [{'name': 'a', 'kind': 4}],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -237,7 +237,7 @@ def test_d2f_mixed_params():
             {'kind': 4, 'name': 'd'},
         ],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -252,7 +252,7 @@ def test_d2f_default_no_hint():
         'doc': 'default_no_hint',
         'params': [{'name': 'a', 'kind': 1, 'hint': 'int', 'default': 42}],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -271,7 +271,7 @@ def test_d2f_kwargs_param():
             {'name': 'a', 'kind': 3, 'hint': 'int'},
         ],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -299,7 +299,7 @@ def test_d2f_param_decorator():
             }
         ],
     }
-    func = function.dict_to_func(d, f)
+    func = function.decode(d, f)
 
     assert func.__name__ == f.__name__
     assert func.__doc__ is f.__doc__
@@ -322,16 +322,16 @@ def test_d2f_param_decorator():
 def test_d2f_invalid_param_name(name, expectation):
     d = {'name': 'invalid', 'params': [{'name': name, 'kind': 1}]}
     with expectation:
-        function.dict_to_func(d, lambda: None)
+        function.decode(d, lambda: None)
 
 
 ##
-## func_to_dict tests
+## encode tests
 ##
 
 
 def test_f2d_null():
-    d = function.func_to_dict(F().null)
+    d = function.encode(F().null)
     assert d == {
         'name': 'null',
         'doc': None,
@@ -340,7 +340,7 @@ def test_f2d_null():
 
 
 def test_f2d_positional():
-    d = function.func_to_dict(F().positional)
+    d = function.encode(F().positional)
     assert d == {
         'name': 'positional',
         'doc': 'positional',
@@ -350,7 +350,7 @@ def test_f2d_positional():
 
 
 def test_f2d_default():
-    d = function.func_to_dict(F().default)
+    d = function.encode(F().default)
     assert d == {
         'name': 'default',
         'doc': 'default',
@@ -360,7 +360,7 @@ def test_f2d_default():
 
 
 def test_f2d_command():
-    d = function.func_to_dict(F().command)
+    d = function.encode(F().command)
     assert d == {
         'name': 'command',
         'doc': 'command',
@@ -370,7 +370,7 @@ def test_f2d_command():
 
 
 def test_f2d_stream():
-    d = function.func_to_dict(F().stream)
+    d = function.encode(F().stream)
     assert d == {
         'name': 'stream',
         'doc': 'stream',
@@ -381,7 +381,7 @@ def test_f2d_stream():
 
 @pytest.mark.skipif(sys.version_info < (3, 8), reason='requires Python >= 3.8')
 def test_f2d_positional_only():
-    d = function.func_to_dict(F().positional_only)
+    d = function.encode(F().positional_only)
     assert d == {
         'name': 'positional_only',
         'doc': 'positional_only',
@@ -391,7 +391,7 @@ def test_f2d_positional_only():
 
 
 def test_f2d_var_positional():
-    d = function.func_to_dict(F().var_positional)
+    d = function.encode(F().var_positional)
     assert d == {
         'name': 'var_positional',
         'doc': 'var_positional',
@@ -401,7 +401,7 @@ def test_f2d_var_positional():
 
 
 def test_f2d_var_keyword():
-    d = function.func_to_dict(F().var_keyword)
+    d = function.encode(F().var_keyword)
     assert d == {
         'name': 'var_keyword',
         'doc': 'var_keyword',
@@ -411,7 +411,7 @@ def test_f2d_var_keyword():
 
 
 def test_f2d_mixed_params():
-    d = function.func_to_dict(F().mixed_params)
+    d = function.encode(F().mixed_params)
     assert d == {
         'name': 'mixed_params',
         'doc': 'mixed_params',
@@ -429,7 +429,7 @@ def test_f2d_mixed_params():
 
 
 def test_f2d_default_no_hint():
-    d = function.func_to_dict(F().default_no_hint)
+    d = function.encode(F().default_no_hint)
     assert d == {
         'name': 'default_no_hint',
         'doc': 'default_no_hint',
@@ -439,7 +439,7 @@ def test_f2d_default_no_hint():
 
 
 def test_f2d_kwargs_param():
-    d = function.func_to_dict(F().kwargs_param)
+    d = function.encode(F().kwargs_param)
     assert d == {
         'name': 'kwargs_param',
         'doc': 'kwargs_param',
@@ -453,7 +453,7 @@ def test_f2d_kwargs_param():
 
 
 def test_f2d_param_decorator():
-    d = function.func_to_dict(F().param_decorator)
+    d = function.encode(F().param_decorator)
     assert d == {
         'name': 'param_decorator',
         'doc': 'param_decorator',

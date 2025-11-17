@@ -83,7 +83,7 @@ class Protocol:
             except Exception as exc:
                 self.send_err(exc)
 
-    def recv_cmd(self, msg: 'Message') -> None:
+    def recv_cmd(self, msg: Message) -> None:
         """Decode a command message and execute the requested method."""
         svc_name, cmd_name, args, kwargs = msg.data
 
