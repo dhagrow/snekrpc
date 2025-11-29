@@ -1,3 +1,5 @@
+"""Service base classes and helpers."""
+
 from __future__ import annotations
 
 import inspect
@@ -17,6 +19,7 @@ ServiceMeta = registry.create_metaclass(__name__)
 
 
 def parse_alias(name: str) -> tuple[str, str | None]:
+    """Split ``name`` into ``module`` and ``alias`` if ``:`` is present."""
     try:
         base, alias = name.split(':')
     except ValueError:
@@ -25,12 +28,14 @@ def parse_alias(name: str) -> tuple[str, str | None]:
 
 
 def get_class(name: str):
+    """Return the registered Service subclass for ``name``."""
     return ServiceMeta.get(name)
 
 
 def get(
     name: str | Service, service_args: Mapping[str, Any] | None = None, alias: str | None = None
 ):
+    """Instantiate (or normalize) a service definition."""
     if isinstance(name, Service):
         obj = name
     elif inspect.isclass(name) and issubclass(name, Service):
@@ -46,6 +51,7 @@ def get(
 
 
 def service_to_dict(svc: Service) -> dict[str, Any]:
+    """Serialize a service definition for metadata responses."""
     f2d = utils.function.func_to_dict
 
     data: dict[str, Any] = {'name': svc._name_, 'doc': svc.__doc__}
@@ -63,14 +69,20 @@ def service_to_dict(svc: Service) -> dict[str, Any]:
 
 
 class Service(metaclass=ServiceMeta):
+    """Base class for RPC services."""
+
     _name_: str | None = None
 
     def __init__(self) -> None:
+        """Primarily intended for subclass initialization."""
         pass
 
 
 class ServiceProxy:
+    """Client-side helper that exposes remote commands as callables."""
+
     def __init__(self, name: str, client: Client, metadata: bool | Sequence[dict[str, Any]] = True):
+        """Cache remote service metadata and wrap remote commands."""
         self._svc_name = to_str(name)
         self._client = client
         self._commands: dict[str, Callable[..., Any]] = {}
@@ -90,6 +102,7 @@ class ServiceProxy:
             self._commands.update({c['name']: wrap_command(c) for c in metadata})
 
     def __getattr__(self, cmd_name: str) -> Callable[..., Any]:
+        """Return a cached callable or lazily wrap the remote command."""
         if self._commands:
             try:
                 return self._commands[cmd_name]
@@ -98,10 +111,13 @@ class ServiceProxy:
         return wrap_call(self, cmd_name)
 
     def __dir__(self) -> list[str]:
+        """Add remote command names to ``dir()`` results."""
         return list(self._commands.keys()) + list(super().__dir__())
 
 
 def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None = None):
+    """Wrap a remote call in retry logic, handling stream outputs."""
+
     def call(*args: Any, **kwargs: Any):
         con = proxy._client.connect()
         try:
@@ -159,7 +175,10 @@ def wrap_call(proxy: ServiceProxy, cmd_name: str, cmd_def: dict[str, Any] | None
 
 
 class StreamInitiator:
+    """Iterator shim that replays the first yielded value."""
+
     def __init__(self, gen: Iterator[Any]) -> None:
+        """Prime the generator while preserving the first item."""
         try:
             gen = itertools.chain([next(gen)], gen)
         except StopIteration:
@@ -167,4 +186,5 @@ class StreamInitiator:
         self._gen = gen
 
     def __iter__(self) -> Iterator[Any]:
+        """Yield the cached first item followed by the original stream."""
         yield from self._gen

@@ -1,3 +1,5 @@
+"""Helpers for configuring and using project logging."""
+
 from __future__ import annotations
 
 import sys
@@ -39,6 +41,7 @@ def handle_exception(
     evalue: BaseException,
     etb: TracebackType | None,
 ) -> None:
+    """Log uncaught exceptions while letting Ctrl+C exit quietly."""
     if issubclass(etype, KeyboardInterrupt):
         sys.__excepthook__(etype, evalue, etb)
         return

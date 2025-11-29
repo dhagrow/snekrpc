@@ -1,3 +1,5 @@
+"""Service for basic filesystem manipulation on the server."""
+
 from __future__ import annotations
 
 import contextlib
@@ -16,30 +18,36 @@ CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
 
 
 class FileService(Service):
+    """Expose file operations such as listing, uploads, and downloads."""
+
     _name_ = 'file'
 
     @param('root_path', doc='root path for all file operations')
-    @param('safe_root', bool, doc='ensures that no file operation escapes the root path')
-    @param('chunk_size', int, default=CHUNK_SIZE, doc='size of data to buffer when reading')
+    @param('safe_root', doc='ensures that no file operation escapes the root path')
+    @param('chunk_size', doc='size of data to buffer when reading')
     def __init__(
-        self, root_path: str | None = None, safe_root: bool = True, chunk_size: int | None = None
+        self, root_path: str | None = None, safe_root: bool = True, chunk_size: int = CHUNK_SIZE
     ) -> None:
+        """Configure the working root, safety, and buffering settings."""
         self.root_path = root_path or os.getcwd()
         self.safe_root = safe_root
-        self.chunk_size = chunk_size or CHUNK_SIZE
+        self.chunk_size = chunk_size
 
     @property
     def root_path(self) -> str:
+        """Return the normalized root path for operations."""
         return self._root_path
 
     @root_path.setter
     def root_path(self, root_path: str) -> None:
+        """Normalize the supplied root path and store it."""
         path = os.path.expandvars(os.path.expanduser(root_path))
         path = os.path.abspath(os.path.normpath(path))
         self._root_path = os.path.join(path, '')
 
     @command()
     def paths(self, pattern: str | None = None, with_metadata: bool = False):
+        """Yield file paths (optionally including metadata) matching pattern."""
         pattern = self.check_path(pattern or '*')
         if os.path.isdir(pattern):
             pattern = os.path.join(pattern, '*')
@@ -68,12 +76,14 @@ class FileService(Service):
 
     @command()
     def touch(self, path: str) -> None:
+        """Create a file if missing or update its timestamp."""
         path = self.check_path(path)
         with open(path, 'a'):
             os.utime(path, None)
 
     @command()
     def create_dir(self, path: str, mode: str | None = None, recurse: bool = False) -> None:
+        """Create a directory with optional recursion."""
         path = self.check_path(path)
         numeric_mode = 0o755 if mode is None else int(mode, 8)
         if recurse:
@@ -83,6 +93,7 @@ class FileService(Service):
 
     @command()
     def delete(self, path: str, recurse: bool = False) -> None:
+        """Delete a file or directory (optionally recursive)."""
         path = self.check_path(path)
         if os.path.isdir(path):
             if recurse:
@@ -96,6 +107,7 @@ class FileService(Service):
     @param('dst_path', doc='the remote path to upload to')
     @command()
     def upload(self, src: Iterable[bytes], dst_path: str) -> str:
+        """Write streamed data to the destination path."""
         path = self.check_path(dst_path)
 
         with open(path, 'wb') as fp:
@@ -110,6 +122,7 @@ class FileService(Service):
     @param('src_path', doc='the remote path to download from')
     @command()
     def download(self, src_path: str) -> Iterator[bytes]:
+        """Stream the contents of `src_path` back to the caller."""
         path = self.check_path(src_path)
         with open(path, 'rb') as fp:
             for chunk in utils.path.iter_file(fp, self.chunk_size):
@@ -118,12 +131,14 @@ class FileService(Service):
 
     @command()
     def size(self, path: str) -> int:
+        """Return the file size for `path`."""
         with self.sanitize_errors():
             path = self.check_path(path)
             return os.stat(path).st_size
 
     @contextlib.contextmanager
     def sanitize_errors(self) -> Iterator[None]:
+        """Ensure error filenames are safe to expose when safe_root is set."""
         try:
             yield
         except OSError as exc:
@@ -131,11 +146,13 @@ class FileService(Service):
             raise
 
     def sanitize_path(self, path: str, root_path: str | None = None) -> str:
+        """Return a user-safe path when safe_root is enabled."""
         if not self.safe_root:
             return path
         return os.path.relpath(path, root_path or self.root_path)
 
     def check_path(self, path: str | None, root_path: str | None = None) -> str:
+        """Validate and normalize `path` relative to `root_path`."""
         path = path or '.'
         root_path = root_path or self.root_path
 

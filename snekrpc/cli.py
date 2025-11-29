@@ -1,3 +1,5 @@
+"""Command-line entry points for interacting with local and remote servers."""
+
 from __future__ import annotations
 
 import argparse
@@ -27,7 +29,10 @@ def main() -> None:
 
 
 class Parser:
+    """Builds CLI parsers for both client and server workflows."""
+
     def __init__(self) -> None:
+        """Initialize the base parser and global argument definitions."""
         # global args
         self.base_parser = argparse.ArgumentParser(add_help=False)
         self.add_global_args(self.base_parser)
@@ -130,6 +135,7 @@ class Parser:
     def start_client(
         self, trn: transport.Transport, parser: argparse.ArgumentParser, args: Args
     ) -> None:
+        """Connect to the remote server and execute a command."""
         client = interface.Client(
             trn,
             codec=args.codec,
@@ -223,6 +229,7 @@ class Parser:
         args: Args,
         svc_args: dict[str, dict[str, Any]],
     ) -> None:
+        """Start an RPC server with the configured services."""
         # create server
         s = interface.Server(
             trn,
@@ -242,6 +249,7 @@ class Parser:
     ## get arguments ##
 
     def get_prefixed_args(self, args: Args) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Split parsed values into transport and service dictionaries."""
         pfx_args: dict[str, dict[str, Any]] = {}
 
         for name, value in vars(args).items():
@@ -288,6 +296,7 @@ class Parser:
     ## add arguments ##
 
     def add_service_args(self, parser: argparse.ArgumentParser, cls: Any, alias: str) -> None:
+        """Expose ``cls.__init__`` parameters under the given service alias."""
         svc_parser = parser.add_argument_group('{} service arguments'.format(alias))
 
         # add a prefix to every param
@@ -303,6 +312,7 @@ class Parser:
         self.add_command_args(svc_parser, cmd, single_flags=False)
 
     def add_transport_args(self, parser: argparse.ArgumentParser, cls: Any) -> None:
+        """Expose transport constructor parameters with a unique prefix."""
         ignored = {'url', 'timeout'}
         trn_parser = parser.add_argument_group(
             '{} transport arguments'.format(cls._name_),
@@ -324,12 +334,15 @@ class Parser:
     def add_transport_exception(
         self, parser: argparse.ArgumentParser, name: str, exc: Exception
     ) -> None:
+        """Display an error group when a transport fails to import."""
         parser.add_argument_group(
             '{} transport arguments'.format(name),
             'failed to load transport: {}'.format(exc),
         )
 
     def add_command_args(self, parser: Any, cmd: CommandMeta, single_flags: bool = True) -> None:
+        """Translate command metadata into argparse arguments."""
+
         def is_option_arg(param: CommandMeta) -> bool:
             return param['kind'] == Param.VAR_KEYWORD or 'default' in param
 
@@ -379,6 +392,7 @@ class Parser:
     def add_option_arg(
         self, parser: Any, param: CommandMeta, chars: set[str] | None = None
     ) -> None:
+        """Add an individual option flag, handling bool/kwargs special cases."""
         name = param['name']
         kind = param['kind']
         hint = param.get('hint')
@@ -571,12 +585,14 @@ class Parser:
     ## parser help ##
 
     def get_help(self, doc: str | None) -> str:
+        """Return the first line of a documentation string."""
         doc = doc or '\n'
         return doc.splitlines()[0]
 
     def get_argument_help(
         self, doc: str | None = None, hint: str | None = None, default: Any = None
     ) -> str:
+        """Build an argparse help string that includes hints and defaults."""
         if hint == 'stream':
             hint = "path or '-' for stdin"
         help = '<{}>'.format(hint) if hint else ''
@@ -587,6 +603,7 @@ class Parser:
         return help
 
     def get_argument_hint(self, hint: str | None) -> str:
+        """Return a placeholder string usable as metavar text."""
         if not hint:
             return '<str>'
         elif hint in COLLECTION_TYPES:
@@ -668,6 +685,7 @@ class Parser:
 
 
 def io_stat_mode() -> str:
+    """Return whether stdout is piped, redirected, or connected to a tty."""
     mode = os.fstat(sys.stdout.fileno()).st_mode
     if stat.S_ISFIFO(mode):
         return 'piped'
@@ -679,7 +697,10 @@ def io_stat_mode() -> str:
 
 # fix for open issue: https://bugs.python.org/issue14156
 class FileType(argparse.FileType):
+    """Version of argparse.FileType that unwraps stdin buffers reliably."""
+
     def __call__(self, string: str):
+        """Return a binary buffer when reading stdin."""
         fp = super().__call__(string)
         if string == '-' and 'r' in self._mode:
             fp = getattr(fp, 'buffer', fp)

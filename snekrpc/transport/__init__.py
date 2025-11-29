@@ -1,3 +1,5 @@
+"""Base transport abstractions."""
+
 from __future__ import annotations
 
 import struct
@@ -27,55 +29,73 @@ def get(url: str | utils.url.Url | 'Transport', transport_args: Mapping[str, Any
 
 
 class Transport(metaclass=TransportMeta):
+    """Base transport class mirrored across clients and servers."""
+
     _name_: str | None = None
 
     def __init__(self, url: str | utils.url.Url):
+        """Store the normalized URL for later use."""
         self._url = utils.url.Url(url)
 
     @property
     def url(self) -> utils.url.Url:
+        """Return the configured transport URL."""
         return self._url
 
     def connect(self, client: Any) -> Connection:
+        """Connect to a remote endpoint and return a Connection."""
         raise NotImplementedError
 
     def serve(self, server: Any) -> None:
+        """Start serving RPC requests."""
         raise NotImplementedError
 
     def stop(self) -> None:
+        """Stop serving and release resources."""
         raise NotImplementedError
 
     def join(self, timeout: float | None = None) -> None:
+        """Block until the server threads exit."""
         raise NotImplementedError
 
 
 @dataclass(slots=True)
 class Message:
+    """Convenience object representing protocol messages."""
+
     op: int
     data: Any = None
 
     def __repr__(self) -> str:
+        """Return a readable representation for logging."""
         class_name = self.__class__.__name__
         data_str = f', data={utils.format.elide(repr(self.data))}' if self.data is not None else ''
         return f'{class_name}(op=<{self.op}:{Op.to_str(self.op)}>{data_str})'
 
 
 class Connection:
+    """Wrap an underlying socket-like object and handle message encoding."""
+
     def __init__(self, interface: Interface, addr: str) -> None:
+        """Bind the connection to an interface instance and address."""
         self._ifc = interface
         self._addr = addr
 
     @property
     def url(self) -> str:
+        """Return a string representation of the connection endpoint."""
         return self._addr
 
     def send(self, data: bytes) -> None:
+        """Send raw bytes."""
         raise NotImplementedError
 
     def recv(self) -> bytes:
+        """Receive raw bytes."""
         raise NotImplementedError
 
     def req_handshake(self) -> None:
+        """Negotiate codec information as an RPC client."""
         if self._ifc.codec:
             return
 
@@ -98,6 +118,7 @@ class Connection:
         self._ifc.codec = codec.decode('utf8')
 
     def res_handshake(self, data: bytes) -> bytes:
+        """Respond to handshake requests as an RPC server."""
         if data != b'\x00':
             return data
 
@@ -116,6 +137,7 @@ class Connection:
         return self.recv()
 
     def recv_msg(self) -> Message | None:
+        """Receive and decode a complete message."""
         data = self.recv()
         data = self.res_handshake(data)
 
@@ -132,6 +154,7 @@ class Connection:
         return msg
 
     def send_msg(self, op: int, data: Any = None) -> None:
+        """Encode and send a message (performing the handshake as needed)."""
         self.req_handshake()
 
         if log.isEnabledFor(logs.DEBUG):
@@ -144,10 +167,13 @@ class Connection:
         self.send(msg)
 
     def close(self) -> None:
+        """Close the underlying socket/resource."""
         pass
 
     def __enter__(self) -> 'Connection':
+        """Allow context-manager usage."""
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
+        """Close the connection when leaving a `with` block."""
         self.close()

@@ -1,3 +1,5 @@
+"""Helpers for recursively converting between str and bytes."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -5,6 +7,7 @@ from typing import Any
 
 
 def to_bytes(value: Any, encoding: str = 'utf8') -> Any:
+    """Encode strings (and nested structures) to bytes."""
     if isinstance(value, bytes):
         return value
     if isinstance(value, str):

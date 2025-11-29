@@ -1,3 +1,5 @@
+"""Convenience exports for the package public API."""
+
 from __future__ import annotations
 
 from . import logs

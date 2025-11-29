@@ -1,3 +1,5 @@
+"""Registry helpers that auto-import packages and expose named lookups."""
+
 from __future__ import annotations
 
 from threading import Event, Lock
@@ -26,9 +28,12 @@ def init() -> None:
 
 
 class RegistryMeta(type):
+    """Metaclass that keeps a registry of subclasses by name."""
+
     registry: ClassVar[dict[str, type[Any] | Exception]] = {}
 
     def __init__(cls, name: str, bases: tuple[type, ...], namespace: dict[str, Any]) -> None:
+        """Register each subclass under `_name_` (or the class name)."""
         super().__init__(name, bases, namespace)
         if bases and bases[0] is not object:
             cls._name_ = reg_name = namespace.get('_name_', name)  # type: ignore[attr-defined]
@@ -39,6 +44,7 @@ class RegistryMeta(type):
 
     @classmethod
     def get(cls, name: str) -> type[Any]:
+        """Block until registries are initialized and return a registered class."""
         _initialized.wait()
         entry = cls.registry[name]
         if isinstance(entry, Exception):
@@ -47,17 +53,21 @@ class RegistryMeta(type):
 
     @classmethod
     def names(cls) -> tuple[str, ...]:
+        """Return all registered names in insertion order."""
         _initialized.wait()
         return tuple(cls.registry.keys())
 
     @classmethod
     def init(cls, name: str) -> None:
+        """Eagerly import `name` to populate the registry with entry points."""
         exceptions = import_package(name)
         for modname, exc in exceptions.items():
             cls.registry[modname] = exc
 
 
 def create_metaclass(meta_name: str) -> type[RegistryMeta]:
+    """Create and register a distinct RegistryMeta subclass for `meta_name`."""
+
     class Meta(RegistryMeta):
         registry: ClassVar[dict[str, type[Any] | Exception]] = {}
 

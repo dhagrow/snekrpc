@@ -1,3 +1,5 @@
+"""Codec base classes and helpers."""
+
 from __future__ import annotations
 
 import datetime
@@ -21,12 +23,16 @@ def get(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Codec
 
 
 class Codec(metaclass=CodecMeta):
+    """Base class for codecs that know how to encode/decode RPC payloads."""
+
     _name_: str
 
     def encode(self, msg: Any) -> bytes:
+        """Serialize `msg` into bytes."""
         raise NotImplementedError('abstract')
 
     def decode(self, data: bytes) -> Any:
+        """Deserialize bytes into Python objects."""
         raise NotImplementedError('abstract')
 
     def _encode(self, msg: Any) -> bytes:
@@ -45,6 +51,7 @@ class Codec(metaclass=CodecMeta):
 
 
 def encode(obj: Any) -> Any:
+    """Encode to basic types."""
     if isinstance(obj, datetime.datetime):
         return encode_datetime(obj)
     if inspect.isgenerator(obj):
@@ -53,6 +60,7 @@ def encode(obj: Any) -> Any:
 
 
 def decode(obj: MutableMapping[str, Any]) -> Any:
+    """Decode from basic types."""
     if '__datetime__' in obj:
         return decode_datetime(obj)
     if '__generator__' in obj:
@@ -61,6 +69,7 @@ def decode(obj: MutableMapping[str, Any]) -> Any:
 
 
 def encode_datetime(obj: datetime.datetime) -> dict[str, bytes]:
+    """Serialize datetimes via temporenc with a type marker."""
     data = temporenc.packb(obj)
     if data is None:
         raise ValueError('temporenc.packb returned None')
@@ -72,12 +81,15 @@ def encode_datetime(obj: datetime.datetime) -> dict[str, bytes]:
 
 
 def decode_datetime(obj: Mapping[str, bytes]) -> datetime.datetime:
+    """Restore temporenc-encoded datetime dictionaries."""
     return temporenc.unpackb(obj['__datetime__']).datetime()
 
 
 def encode_generator(obj: Generator[Any, Any, Any]) -> dict[str, None]:
+    """Mark generator objects so the receiver can request a stream."""
     return {'__generator__': None}
 
 
 def decode_generator(_: Mapping[str, Any]) -> Generator[Any, None, None]:
+    """Return an empty generator placeholder; stream data arrives separately."""
     yield from ()

@@ -1,3 +1,5 @@
+"""Formatting helpers for logging and user output."""
+
 from __future__ import annotations
 
 import traceback
@@ -6,6 +8,7 @@ from typing import Any
 
 
 def format_cmd(svc_name: str, cmd_name: str, args: Iterable[Any], kwargs: Mapping[str, Any]) -> str:
+    """Return a string describing the service command invocation."""
     arg_parts: list[str] = []
     if args:
         arg_parts.append(', '.join(f'{value!r}' for value in args))
@@ -15,8 +18,10 @@ def format_cmd(svc_name: str, cmd_name: str, args: Iterable[Any], kwargs: Mappin
 
 
 def format_exc(exc: BaseException) -> str:
+    """Render an exception similar to traceback output."""
     return traceback.format_exception_only(exc.__class__, exc)[0].strip()
 
 
 def elide(value: str, width: int = 100) -> str:
+    """Truncate `value` while keeping the start visible."""
     return value if len(value) <= width else f'{value[: width - 3]}...'

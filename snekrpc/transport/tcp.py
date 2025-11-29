@@ -1,3 +1,5 @@
+"""TCP transport implementation."""
+
 from __future__ import annotations
 
 import errno
@@ -19,31 +21,39 @@ log = logs.get(__name__)
 
 
 class TcpConnection(Connection):
+    """Connection implementation backed by a TCP socket."""
+
     log = log
 
     def __init__(
         self, interface: Any, sock: socket.socket, url: str, chunk_size: int | None = None
     ) -> None:
+        """Wrap a socket for RPC messaging."""
         super().__init__(interface, url)
         self._sock = sock
         self._chunk_size = chunk_size
         self.log.debug('connected: %s', self.url)
 
     def recv(self) -> bytes:
+        """Receive bytes from the socket."""
         return recv(self._sock, self._chunk_size)
 
     def send(self, data: bytes) -> None:
+        """Send bytes through the socket."""
         try:
             send(self._sock, data)
         except OSError as exc:
             raise errors.TransportError(exc) from exc
 
     def close(self) -> None:
+        """Close the socket."""
         close(self._sock)
         self.log.debug('disconnected: %s', self.url)
 
 
 class TcpTransport(Transport):
+    """Expose the transport API over TCP."""
+
     _name_ = 'tcp'
     log = log
     Connection = TcpConnection
@@ -60,6 +70,7 @@ class TcpTransport(Transport):
         ssl_cert: str | None = None,
         ssl_key: str | None = None,
     ) -> None:
+        """Store connection parameters and TLS configuration."""
         super().__init__(url)
         target = self._url
         host = target.host or utils.url.DEFAULT_HOST
@@ -78,6 +89,7 @@ class TcpTransport(Transport):
         self._stopped = threading.Event()
 
     def connect(self, client: Any) -> TcpConnection:
+        """Create a connection to the configured host."""
         sock = socket.create_connection(self._addr, self.timeout)
 
         if self._ssl_cert:
@@ -89,6 +101,7 @@ class TcpTransport(Transport):
         return self.Connection(client, sock, self._url.netloc, self.chunk_size)
 
     def bind(self) -> None:
+        """Create and bind a listening socket."""
         self._sock = sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(ACCEPT_TIMEOUT)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -96,6 +109,7 @@ class TcpTransport(Transport):
         sock.listen(self.backlog)
 
     def serve(self, server: Any) -> None:
+        """Accept incoming connections and handle them in threads."""
         self.bind()
         self.log.info('listening: %s', self.url)
 
@@ -132,18 +146,22 @@ class TcpTransport(Transport):
             stopped.set()
 
     def handle(self, server: Any, sock: socket.socket, addr: tuple[str, int]) -> None:
+        """Wrap `sock` in a Connection and let the server handle requests."""
         addr_str = utils.url.format_addr(addr)
         with self.Connection(server, sock, addr_str, self.chunk_size) as con:
             server.handle(con)
 
     def stop(self) -> None:
+        """Signal the accept loop to exit."""
         self._stop.set()
 
     def join(self, timeout: float | None = None) -> None:
+        """Wait for the accept loop to finish."""
         self._stopped.wait(timeout)
 
 
 def close(sock: socket.socket) -> None:
+    """Shutdown and close a socket, ignoring common errors."""
     try:
         sock.shutdown(socket.SHUT_RDWR)
     except (OSError, socket.error) as exc:
@@ -153,6 +171,7 @@ def close(sock: socket.socket) -> None:
 
 
 def recv(sock: socket.socket, chunk_size: int | None = None) -> bytes:
+    """Receive a full message including size prefix."""
     try:
         return b''.join(recviter(sock, chunk_size))
     except errors.ReceiveInterrupted:
@@ -162,6 +181,7 @@ def recv(sock: socket.socket, chunk_size: int | None = None) -> bytes:
 
 
 def recviter(sock: socket.socket, chunk_size: int | None = None):
+    """Yield chunks for a single message payload."""
     buf = b''.join(recvsize(sock, 4, chunk_size))
     data_len = struct.unpack('>I', buf)[0]
     for chunk in recvsize(sock, data_len, chunk_size):
@@ -169,6 +189,7 @@ def recviter(sock: socket.socket, chunk_size: int | None = None):
 
 
 def recvsize(sock: socket.socket, size: int, chunk_size: int | None = None):
+    """Yield until `size` bytes have been read."""
     pos = 0
     chunk_size = min(size, chunk_size or CHUNK_SIZE)
     while pos < size:
@@ -180,6 +201,7 @@ def recvsize(sock: socket.socket, size: int, chunk_size: int | None = None):
 
 
 def send(sock: socket.socket, data: bytes) -> None:
+    """Send a length-prefixed payload."""
     data_len = len(data)
     size = struct.pack('>I', data_len)
     sock.sendall(size)

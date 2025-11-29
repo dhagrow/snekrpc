@@ -1,3 +1,5 @@
+"""RPC protocol handling for the built-in transports."""
+
 from __future__ import annotations
 
 import inspect
@@ -15,6 +17,8 @@ log = logs.get(__name__)
 
 
 class Op:
+    """Enumeration of protocol opcodes exchanged between peers."""
+
     # fmt: off
     handshake    = 0  # <raw> initial handshake (codec)
     command      = 1  # call a command (svc_name, cmd_name, args, kwargs)
@@ -26,6 +30,7 @@ class Op:
 
     @classmethod
     def to_str(cls, op: int) -> str:
+        """Return the opcode name for diagnostics."""
         for name, value in vars(cls).items():
             if value == op:
                 return name
@@ -33,25 +38,31 @@ class Op:
 
 
 class Protocol:
+    """Handle RPC messages for a single client/server connection."""
+
     def __init__(
         self,
         interface: Client | Server,
         con: Connection,
         metadata: MutableMapping[str, Any] | None = None,
     ) -> None:
+        """Capture interfaces, connections, and any metadata."""
         self._ifc = interface
         self._con = con
         self.metadata: MutableMapping[str, Any] = metadata or {}
 
     @property
     def local_url(self):
+        """Return the local URL used by this endpoint."""
         return self._ifc.url
 
     @property
     def remote_url(self):
+        """Return the remote URL for the peer connection."""
         return self._con.url
 
     def handle(self) -> None:
+        """Main loop that receives messages and dispatches commands."""
         recv = self._con.recv_msg
 
         while True:
@@ -73,6 +84,7 @@ class Protocol:
                 self.send_err(exc)
 
     def recv_cmd(self, msg: 'Message') -> None:
+        """Decode a command message and execute the requested method."""
         svc_name, cmd_name, args, kwargs = msg.data
 
         svc = self._ifc.service(svc_name)
@@ -108,6 +120,7 @@ class Protocol:
             self._con.send_msg(Op.data, res)
 
     def send_cmd(self, svc_name: str, cmd_name: str, *args: Any, **kwargs: Any) -> Any:
+        """Send a command to the remote endpoint and return the response."""
         if log.isEnabledFor(logs.DEBUG):
             log.debug(
                 'cmd: %s -> %s',
@@ -153,6 +166,7 @@ class Protocol:
         raise errors.ProtocolOpError(msg.op)
 
     def recv_stream(self, started: bool = False):
+        """Iterate over stream responses, handling protocol errors."""
         recv = self._con.recv_msg
 
         if not started:
@@ -176,6 +190,7 @@ class Protocol:
                 raise errors.ProtocolOpError(msg.op)
 
     def send_stream(self, it: Iterable[Any]) -> None:
+        """Send generator output over the wire as stream chunks."""
         send = self._con.send_msg
         send(Op.stream_start)
         for value in it:
@@ -183,6 +198,7 @@ class Protocol:
         send(Op.stream_end)
 
     def send_err(self, exc: BaseException) -> None:
+        """Serialize an exception and send it back to the caller."""
         name = exc.__class__.__name__
         msg = str(exc)
         tb = traceback.format_exc().rstrip() if self._ifc.remote_tracebacks else ''

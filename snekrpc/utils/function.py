@@ -1,3 +1,5 @@
+"""Utilities for describing and reconstructing callable signatures."""
+
 from __future__ import annotations
 
 import copy
@@ -17,10 +19,13 @@ _rx_ident = re.compile(rf'^{tokenize.Name}$')
 
 
 def is_identifier(value: str) -> bool:
+    """Return True if ``value`` is a valid, non-keyword identifier."""
     return bool(_rx_ident.match(value)) and value.isidentifier() and not keyword.iskeyword(value)
 
 
 def command() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Decorator that records metadata about a command function."""
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         cmd_meta: dict[str, Any] = func.__dict__.setdefault('_meta', {})
         params: dict[str, dict[str, Any]] = cmd_meta.setdefault('params', {})
@@ -45,6 +50,8 @@ def param(
     hide: bool = False,
     **metadata: Any,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Decorator for attaching metadata about a single parameter."""
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         cmd_meta: dict[str, Any] = func.__dict__.setdefault('_meta', {})
         params: dict[str, dict[str, Any]] = cmd_meta.setdefault('params', {})
@@ -69,6 +76,7 @@ def param(
 
 
 def _hint_to_str(hint: Any | None) -> str:
+    """Normalize Python hints to names used by the CLI."""
     if hint is None:
         return 'str'
     elif (
@@ -79,6 +87,7 @@ def _hint_to_str(hint: Any | None) -> str:
 
 
 def func_to_dict(func: Callable[..., Any], remove_self: bool = False) -> dict[str, Any]:
+    """Convert a callable into a serializable dictionary definition."""
     data: dict[str, Any] = {'name': func.__name__, 'doc': func.__doc__}
     cmd_meta = cast(dict[str, Any], copy.deepcopy(getattr(func, '_meta', {})))
     cmd_params = cmd_meta.pop('params', {})
@@ -120,6 +129,7 @@ def func_to_dict(func: Callable[..., Any], remove_self: bool = False) -> dict[st
 
 
 def dict_to_func(data: dict[str, Any], callback: Callable[..., Any]) -> Callable[..., Any]:
+    """Recreate a callable from serialized metadata."""
     sig_defn: list[str] = []
     sig_call: list[str] = []
 

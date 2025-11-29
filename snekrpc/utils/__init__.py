@@ -1,3 +1,5 @@
+"""Utility helpers and convenience imports used throughout the codebase."""
+
 from __future__ import annotations
 
 import threading

@@ -1,10 +1,12 @@
+"""Exception hierarchy used throughout the project."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 
 class SnekRPCError(Exception):
-    """Base class for all snekrpc exceptions."""
+    """Base class for package-specific exceptions."""
 
 
 class TransportError(SnekRPCError):
@@ -41,9 +43,11 @@ class RemoteError(ClientError):
 
     @property
     def message(self) -> str:
+        """Return the formatted error message provided by the server."""
         return f'{self.name}: {self.msg}'
 
     def __str__(self) -> str:
+        """Prefer the server-side traceback when rendering the error."""
         return self.traceback or self.message
 
 
@@ -59,6 +63,7 @@ class ProtocolOpError(SnekRPCError):
     """Raised for protocol errors."""
 
     def __init__(self, opcode: int) -> None:
+        """Store the invalid opcode so callers can inspect it."""
         super().__init__(f'invalid opcode: {opcode}')
         self.opcode = opcode
 

@@ -1,3 +1,5 @@
+"""Generic retry helper for client calls."""
+
 from __future__ import annotations
 
 import time
@@ -19,6 +21,8 @@ T_Generator = TypeVar('T_Generator')
 
 
 class Retry:
+    """Call functions with configurable retry/backoff support."""
+
     def __init__(
         self,
         count: int | None = None,
@@ -27,6 +31,7 @@ class Retry:
         logger: Any | None = None,
         log_template: str | None = None,
     ) -> None:
+        """Configure retry counts, intervals, and error classes."""
         self.count = RETRY_COUNT if count is None else count
         self.interval = RETRY_INTERVAL if interval is None else interval
         self.errors = tuple(errors or RETRY_ERRORS)
@@ -36,6 +41,7 @@ class Retry:
         self.log_template = log_template or RETRY_LOG_TEMPLATE
 
     def call(self, func: Callable[..., T_Result], *args: Any, **kwargs: Any) -> T_Result:
+        """Invoke `func` with retries applied to non-streaming results."""
         retries = 0
         while True:
             try:
@@ -50,6 +56,7 @@ class Retry:
                 self._log(retries, exc)
 
     def call_gen(self, func: Callable[..., Iterable[T_Generator]], *args: Any, **kwargs: Any):
+        """Invoke `func` expecting an iterator while handling retries."""
         retries = 0
         while True:
             try:
@@ -66,6 +73,7 @@ class Retry:
                 self._log(retries, exc)
 
     def _log(self, retries: int, exc: BaseException) -> None:
+        """Emit a log message describing a retry attempt."""
         self.log(
             self.log_template.format(
                 error=format_exc(exc),

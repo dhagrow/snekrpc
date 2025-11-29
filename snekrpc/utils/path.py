@@ -1,3 +1,5 @@
+"""Filesystem helpers for the utility layer."""
+
 from __future__ import annotations
 
 import errno
@@ -16,6 +18,7 @@ BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 
 def base_path(*names: str) -> str:
+    """Return an absolute path anchored at the repository root."""
     return os.path.join(BASE_PATH, *names)
 
 
