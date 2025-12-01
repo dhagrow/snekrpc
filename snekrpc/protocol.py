@@ -28,9 +28,6 @@ class Message(msgspec.Struct, tag=True, array_like=True):
     def subtypes(cls) -> type:
         return functools.reduce(operator.or_, cls.__subclasses__())
 
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}()'
-
 
 class CommandMessage(Message):
     service_name: str
@@ -41,6 +38,9 @@ class CommandMessage(Message):
 
 class DataMessage(Message):
     data: Any
+
+    # def __repr__(self) -> str:
+    #     return f'{self.__class__.__name__}()'
 
 
 class ErrorMessage(Message):
@@ -54,6 +54,14 @@ class StreamStartMessage(Message):
 
 
 class StreamEndMessage(Message):
+    pass
+
+
+class Argument(msgspec.Struct, tag=True, array_like=True):
+    value: Any
+
+
+class StreamArgument(msgspec.Struct, tag=True, array_like=True):
     pass
 
 
@@ -178,13 +186,17 @@ class Protocol:
         recv_kwargs = {}
 
         for arg in msg.args:
-            if inspect.isgenerator(arg):
-                arg = self.recv_stream()
-            recv_args.append(arg)
+            arg = msgspec.convert(arg, Argument | StreamArgument)
+            if isinstance(arg, StreamArgument):
+                recv_args.append(self.recv_stream())
+            else:
+                recv_args.append(arg.value)
         for name, arg in msg.kwargs.items():
-            if inspect.isgenerator(arg):
-                arg = self.recv_stream()
-            recv_kwargs[name] = arg
+            arg = msgspec.convert(arg, Argument | StreamArgument)
+            if isinstance(arg, StreamArgument):
+                recv_kwargs[name] = self.recv_stream()
+            else:
+                recv_kwargs[name] = arg.value
 
         args = recv_args
         kwargs = recv_kwargs
@@ -221,18 +233,26 @@ class Protocol:
                 if stream is not None:
                     raise errors.ParameterError('only one stream param is possible')
                 stream = arg
-            send_args.append(arg)
+                send_args.append(StreamArgument())
+            else:
+                send_args.append(Argument(arg))
         for name, arg in kwargs.items():
             if inspect.isgenerator(arg):
                 if stream is not None:
                     raise errors.ParameterError('only one stream param is possible')
                 stream = arg
-            send_kwargs[name] = arg
+                send_kwargs[name] = StreamArgument()
+            else:
+                send_kwargs[name] = Argument(arg)
 
-        args = tuple(send_args)
-        kwargs = send_kwargs
-
-        self.send_msg(CommandMessage(svc_name, cmd_name, args, kwargs))
+        self.send_msg(
+            CommandMessage(
+                svc_name,
+                cmd_name,
+                tuple(send_args),
+                send_kwargs,
+            )
+        )
 
         if stream:
             self.send_stream(stream)
@@ -244,12 +264,12 @@ class Protocol:
         match msg:
             case DataMessage(data):
                 return data
-            case ErrorMessage(error):
-                raise errors.RemoteError(*error)
+            case ErrorMessage(name, message, traceback):
+                raise errors.RemoteError(name, message, traceback)
             case StreamStartMessage():
                 return self.recv_stream(started=True)
-
-        raise errors.MessageError(msg)
+            case _:
+                raise errors.MessageError(msg)
 
     def recv_stream(self, started: bool = False):
         """Iterate over stream responses, handling protocol errors."""
@@ -268,12 +288,12 @@ class Protocol:
             match msg:
                 case DataMessage(data):
                     yield data
-                case ErrorMessage(error):
-                    raise errors.RemoteError(*error)
+                case ErrorMessage(name, message, traceback):
+                    raise errors.RemoteError(name, message, traceback)
                 case StreamEndMessage():
                     return
-
-            raise errors.MessageError(msg)
+                case _:
+                    raise errors.MessageError(msg)
 
     def send_stream(self, it: Iterable[Any]) -> None:
         """Send generator output over the wire as stream chunks."""

@@ -41,7 +41,7 @@ class Service(snekrpc.Service):
 
 
 def main():
-    logs.init(1)
+    logs.init()
 
     s = snekrpc.Server('tcp://localhost:1234')
     s.add_service(Service(), alias='ex')

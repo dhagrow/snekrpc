@@ -335,6 +335,7 @@ class Parser:
                     name='_'.join(['transport', cls._name_, param.name]),
                     # force keyword-only params for clarity
                     kind=param.kind if param.kind == Param.VAR_KEYWORD else Param.KEYWORD_ONLY,
+                    hide=param.name in ignored,
                 )
             )
 
@@ -603,7 +604,7 @@ class Parser:
         self, doc: str | None = None, hint: str | None = None, default: Any = None
     ) -> str:
         """Build an argparse help string that includes hints and defaults."""
-        if hint == 'stream':
+        if is_stream_hint(hint):
             hint = "path or '-' for stdin"
         help = '<{}>'.format(hint) if hint else ''
         if doc:
@@ -637,7 +638,7 @@ class Parser:
 
             def conv(value: str) -> Any:
                 return utils.encoding.to_bytes(value)
-        elif hint == 'stream':
+        elif is_stream_hint(hint):
 
             def conv(value: str):
                 fp = cast(BinaryIO, argparse.FileType('rb')(value))
@@ -692,6 +693,10 @@ class Parser:
 ##
 ## cli utils
 ##
+
+
+def is_stream_hint(hint: str | None) -> bool:
+    return False if hint is None else hint.startswith(('Generator', 'Iterable', 'Iterator'))
 
 
 def io_stat_mode() -> str:
