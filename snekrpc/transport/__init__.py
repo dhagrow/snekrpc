@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import struct
 from collections.abc import Mapping
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from .. import errors, logs, registry, utils
-from ..protocol import Op
+from .. import logs, registry, utils
 
 if TYPE_CHECKING:
     from ..interface import Interface
@@ -59,20 +56,6 @@ class Transport(metaclass=TransportMeta):
         raise NotImplementedError
 
 
-@dataclass(slots=True)
-class Message:
-    """Convenience object representing protocol messages."""
-
-    op: int
-    data: Any = None
-
-    def __repr__(self) -> str:
-        """Return a readable representation for logging."""
-        class_name = self.__class__.__name__
-        data_str = f', data={utils.format.elide(repr(self.data))}' if self.data is not None else ''
-        return f'{class_name}(op=<{self.op}:{Op.to_str(self.op)}>{data_str})'
-
-
 class Connection:
     """Wrap an underlying socket-like object and handle message encoding."""
 
@@ -93,78 +76,6 @@ class Connection:
     def recv(self) -> bytes:
         """Receive raw bytes."""
         raise NotImplementedError
-
-    def req_handshake(self) -> None:
-        """Negotiate codec information as an RPC client."""
-        if self._ifc.codec:
-            return
-
-        if log.isEnabledFor(logs.DEBUG):
-            log.debug('msg: %s -> %s', Message(Op.handshake, None), self._addr)
-
-        buf = struct.pack('>B', Op.handshake)
-        self.send(buf)
-
-        buf = self.recv()
-        if not buf:
-            raise errors.TransportError(errors.ReceiveInterrupted())
-        op, codec = struct.unpack(f'>B{len(buf) - 1}s', buf)
-        if op != Op.handshake:
-            raise errors.ProtocolOpError(op)
-
-        if log.isEnabledFor(logs.DEBUG):
-            log.debug('msg: %s <- %s', Message(op, codec), self._addr)
-
-        self._ifc.codec = codec.decode('utf8')
-
-    def res_handshake(self, data: bytes) -> bytes:
-        """Respond to handshake requests as an RPC server."""
-        if data != b'\x00':
-            return data
-
-        if log.isEnabledFor(logs.DEBUG):
-            log.debug('msg: %s <- %s', Message(Op.handshake, None), self._addr)
-
-        codec_name = None if self._ifc.codec is None else self._ifc.codec._name_.encode('utf8')
-
-        if log.isEnabledFor(logs.DEBUG):
-            log.debug('msg: %s -> %s', Message(Op.handshake, codec_name), self._addr)
-
-        buf = struct.pack(
-            f'>B{0 if codec_name is None else len(codec_name)}s', Op.handshake, codec_name
-        )
-        self.send(buf)
-        return self.recv()
-
-    def recv_msg(self) -> Message | None:
-        """Receive and decode a complete message."""
-        data = self.recv()
-        data = self.res_handshake(data)
-
-        if not data:
-            return None
-        if (codec := self._ifc.codec) is None:
-            raise errors.TransportError('codec was not set by handshake')
-
-        msg = Message(*codec._decode(data))
-
-        if log.isEnabledFor(logs.DEBUG):
-            log.debug('msg: %s <- %s', msg, self._addr)
-
-        return msg
-
-    def send_msg(self, op: int, data: Any = None) -> None:
-        """Encode and send a message (performing the handshake as needed)."""
-        self.req_handshake()
-
-        if log.isEnabledFor(logs.DEBUG):
-            log.debug('msg: %s -> %s', Message(op, data), self._addr)
-
-        if (codec := self._ifc.codec) is None:
-            raise errors.TransportError('codec is not set')
-
-        msg = codec._encode((op, data))
-        self.send(msg)
 
     def close(self) -> None:
         """Close the underlying socket/resource."""

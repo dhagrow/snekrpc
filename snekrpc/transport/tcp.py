@@ -58,15 +58,15 @@ class TcpTransport(Transport):
     log = log
     Connection = TcpConnection
 
-    @param('backlog', int, default=BACKLOG)
-    @param('chunk_size', int, default=CHUNK_SIZE)
+    @param('backlog')
+    @param('chunk_size')
     @param('ssl_key', doc='server-side only')
     def __init__(
         self,
         url: str | utils.url.Url,
         timeout: float | None = None,
-        backlog: int | None = None,
-        chunk_size: int | None = None,
+        backlog: int = BACKLOG,
+        chunk_size: int = CHUNK_SIZE,
         ssl_cert: str | None = None,
         ssl_key: str | None = None,
     ) -> None:

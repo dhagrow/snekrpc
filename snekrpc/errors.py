@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 class SnekRPCError(Exception):
@@ -59,13 +60,16 @@ class ParameterError(ServerError):
     """Raised for invalid parameter configurations."""
 
 
-class ProtocolOpError(SnekRPCError):
-    """Raised for protocol errors."""
+class HandshakeError(SnekRPCError):
+    """Raised for protocol handshake errors."""
 
-    def __init__(self, opcode: int) -> None:
+
+class MessageError(SnekRPCError):
+    """Raised for protocol message errors."""
+
+    def __init__(self, message: Any, expected: Any = None) -> None:
         """Store the invalid opcode so callers can inspect it."""
-        super().__init__(f'invalid opcode: {opcode}')
-        self.opcode = opcode
+        super().__init__(f'invalid protocol message: {message} (expected: {expected or "Any"})')
 
 
 class EncodeError(SnekRPCError):

@@ -23,7 +23,7 @@ class Interface:
     def __init__(
         self,
         transport: str | Transport | None = None,
-        codec: str | Any | None = None,
+        codec: str | Codec | None = None,
         version: str | None = None,
     ) -> None:
         registry.init()
@@ -41,7 +41,7 @@ class Interface:
         return self._codec
 
     @codec.setter
-    def codec(self, codec: str | Any | None) -> None:
+    def codec(self, codec: str | Codec | None) -> None:
         self._codec = codec if codec is None else get_codec(codec)
         log.debug('codec: %s', self._codec and self._codec._name_)
 
