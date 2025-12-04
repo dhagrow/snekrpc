@@ -1,5 +1,4 @@
 import random
-import time
 from typing import Any, Iterable
 
 import snekrpc
@@ -11,33 +10,28 @@ class Service(snekrpc.Service):
 
     @snekrpc.command()
     def echo(self, value: Any) -> Any:
+        """Echo back the input value."""
         return value
 
     @snekrpc.command()
     def download(self) -> Iterable[bytes]:
-        total = 0
-        start_t = time.perf_counter()
+        """Start a download of an infinite amount of data.
 
+        To test and measure throughput, try:
+        $ snekrpc -u :1234 -f raw ex download | pv > /dev/null
+        """
         while True:
-            chunk = random.randbytes(512)
-
-            total += len(chunk)
-            elapsed_t = time.perf_counter() - start_t
-            rate = total / elapsed_t
-            print(f'\r{rate:,.2f}b/s {total:,}b', end='')
-
-            yield chunk
+            yield random.randbytes(512)
 
     @snekrpc.command()
     def upload(self, data: Iterable[bytes]) -> None:
-        total = 0
-        start_t = time.perf_counter()
+        """Accept an upload of an infinite amount of data.
 
-        for chunk in data:
-            total += len(chunk)
-            elapsed_t = time.perf_counter() - start_t
-            rate = total / elapsed_t
-            print(f'\r{rate:,.2f}b/s {total:,}b', end='')
+        To test and measure throughput, try:
+        $ cat /dev/urandom | pv | snekrpc -u :1234 ex upload -
+        """
+        for _chunk in data:
+            pass
 
 
 def main():
