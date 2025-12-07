@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from inspect import (
     Parameter,
     Signature,
-    _ParameterKind,
     formatannotation,
     isgeneratorfunction,
     signature,
+)
+from inspect import (
+    _ParameterKind as ParameterKind,
 )
 from typing import Any, Callable, ParamSpec, TypeVar
 
@@ -68,7 +69,7 @@ class ParameterSpec(msgspec.Struct, frozen=True):
 
     name: str
     doc: str | None = None
-    kind: _ParameterKind = _ParameterKind.POSITIONAL_OR_KEYWORD
+    kind: ParameterKind = ParameterKind.POSITIONAL_OR_KEYWORD
     annotation: str | None = None
     default: Any | None = None
     has_default: bool = False
@@ -98,27 +99,34 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
 
     meta: CommandMeta | None = getattr(func, '_meta', None)
 
-    params = []
+    params: dict[str, ParameterSpec] = {}
     for param in sig.parameters.values():
         param_meta = None if meta is None else meta.params.get(param.name)
 
         has_default = param.default is not Parameter.empty
-        params.append(
-            ParameterSpec(
-                param.name,
-                None if param_meta is None else param_meta.doc,
-                param.kind,
-                None if param.annotation is Parameter.empty else formatannotation(param.annotation),
-                param.default if has_default else None,
-                has_default,
-                False if param_meta is None else param_meta.hide,
-            )
+        params[param.name] = ParameterSpec(
+            param.name,
+            None if param_meta is None else param_meta.doc,
+            param.kind,
+            None if param.annotation is Parameter.empty else formatannotation(param.annotation),
+            param.default if has_default else None,
+            has_default,
+            False if param_meta is None else param_meta.hide,
         )
+
+    # add any params defined by the `param()` decorator
+    if meta is not None:
+        for name, param_meta in meta.params.items():
+            if name in params:
+                continue
+            params[name] = ParameterSpec(
+                name, param_meta.doc, ParameterKind.KEYWORD_ONLY, hide=param_meta.hide
+            )
 
     return SignatureSpec(
         func.__name__,
         func.__doc__,
-        tuple(params),
+        tuple(params.values()),
         None
         if sig.return_annotation is Signature.empty
         else formatannotation(sig.return_annotation),
