@@ -9,6 +9,7 @@ class Service(snekrpc.Service):
     """Example service"""
 
     @snekrpc.command()
+    @snekrpc.param('value', 'The value to echo back')
     def echo(self, value: Any) -> Any:
         """Echo back the input value."""
         return value
@@ -24,6 +25,7 @@ class Service(snekrpc.Service):
             yield random.randbytes(512)
 
     @snekrpc.command()
+    @snekrpc.param('data', 'test')
     def upload(self, data: Iterable[bytes]) -> None:
         """Accept an upload of an infinite amount of data.
 

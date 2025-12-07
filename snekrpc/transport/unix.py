@@ -26,14 +26,14 @@ class UnixTransport(tcp.TcpTransport):
     log = log
     Connection: type[tcp.TcpConnection] = UnixConnection
 
-    @param('backlog', int, default=tcp.BACKLOG)
-    @param('chunk_size', int, default=tcp.CHUNK_SIZE)
+    @param('backlog')
+    @param('chunk_size')
     def __init__(
         self,
         url: str | utils.url.Url,
         timeout: float | None = None,
-        backlog: int | None = None,
-        chunk_size: int | None = None,
+        backlog: int = tcp.BACKLOG,
+        chunk_size: int = tcp.CHUNK_SIZE,
     ) -> None:
         """Interpret the filesystem path from the URL."""
         super().__init__(url, timeout, backlog, chunk_size)

@@ -15,7 +15,6 @@ R = TypeVar('R')
 class ParamMeta(msgspec.Struct):
     doc: str | None = None
     hide: bool = False
-    metadata: dict[str, Any] = msgspec.field(default_factory=dict)
 
 
 class CommandMeta(msgspec.Struct):
@@ -38,7 +37,6 @@ def param(
     name: str,
     doc: str | None = None,
     hide: bool = False,
-    **metadata: Any,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for attaching metadata about a single parameter."""
 
@@ -51,8 +49,6 @@ def param(
             param_meta.doc = doc
         if hide:
             param_meta.hide = hide
-
-        param_meta.metadata.update(metadata)
 
         return func
 
@@ -92,17 +88,22 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
         parameters = list(sig.parameters.values())[1:]
         sig = sig.replace(parameters=parameters)
 
+    meta: CommandMeta = func._meta  # type: ignore
+
     params = []
     for param in sig.parameters.values():
+        param_meta = meta.params.get(param.name)
+
         has_default = param.default is not Parameter.empty
         params.append(
             ParameterSpec(
                 param.name,
-                None,
+                None if param_meta is None else param_meta.doc,
                 param.kind.name,
                 None if param.annotation is Parameter.empty else formatannotation(param.annotation),
                 param.default if has_default else None,
                 has_default,
+                False if param_meta is None else param_meta.hide,
             )
         )
 

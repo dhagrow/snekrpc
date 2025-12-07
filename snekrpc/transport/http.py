@@ -56,7 +56,7 @@ class HTTPTransport(Transport):
     _name_ = 'http'
     Handler = HTTPHandler
 
-    @param('headers', dict)
+    @param('headers')
     def __init__(
         self,
         url: str | utils.url.Url,

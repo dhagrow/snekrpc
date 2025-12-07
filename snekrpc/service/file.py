@@ -103,7 +103,7 @@ class FileService(Service):
         else:
             os.remove(path)
 
-    @param('src', 'stream')
+    @param('src', doc='the data to upload')
     @param('dst_path', doc='the remote path to upload to')
     @command()
     def upload(self, src: Iterable[bytes], dst_path: str) -> str:
