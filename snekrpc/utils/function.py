@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from inspect import Parameter, Signature, formatannotation, isgeneratorfunction, signature
+from enum import Enum
+from inspect import (
+    Parameter,
+    Signature,
+    _ParameterKind,
+    formatannotation,
+    isgeneratorfunction,
+    signature,
+)
 from typing import Any, Callable, ParamSpec, TypeVar
 
 import msgspec
@@ -59,9 +67,9 @@ class ParameterSpec(msgspec.Struct, frozen=True):
     """Description of a single callable parameter."""
 
     name: str
-    doc: str | None
-    kind: str
-    annotation: str | None
+    doc: str | None = None
+    kind: _ParameterKind = _ParameterKind.POSITIONAL_OR_KEYWORD
+    annotation: str | None = None
     default: Any | None = None
     has_default: bool = False
     hide: bool = False
@@ -71,9 +79,9 @@ class SignatureSpec(msgspec.Struct, frozen=True):
     """Description of a callable signature."""
 
     name: str
-    doc: str | None
-    parameters: tuple[ParameterSpec, ...]
-    return_annotation: str | None
+    doc: str | None = None
+    parameters: tuple[ParameterSpec, ...] = ()
+    return_annotation: str | None = None
     is_generator: bool = False
 
 
@@ -88,18 +96,18 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
         parameters = list(sig.parameters.values())[1:]
         sig = sig.replace(parameters=parameters)
 
-    meta: CommandMeta = func._meta  # type: ignore
+    meta: CommandMeta | None = getattr(func, '_meta', None)
 
     params = []
     for param in sig.parameters.values():
-        param_meta = meta.params.get(param.name)
+        param_meta = None if meta is None else meta.params.get(param.name)
 
         has_default = param.default is not Parameter.empty
         params.append(
             ParameterSpec(
                 param.name,
                 None if param_meta is None else param_meta.doc,
-                param.kind.name,
+                param.kind,
                 None if param.annotation is Parameter.empty else formatannotation(param.annotation),
                 param.default if has_default else None,
                 has_default,
@@ -129,7 +137,7 @@ def decode(spec: SignatureSpec, func: Callable[..., Any]) -> Callable[..., Any]:
         params.append(
             Parameter(
                 name=param.name,
-                kind=getattr(Parameter, param.kind),
+                kind=param.kind,
                 default=param.default if param.has_default else Parameter.empty,
                 annotation=param.annotation if param.annotation is not None else Signature.empty,
             )

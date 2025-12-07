@@ -275,23 +275,20 @@ class Parser:
         cmd_kwargs = {}
 
         for param in cmd.parameters:
-            name = param.name
-            kind = getattr(Param, param.kind)
-
             if param.hide:
                 continue
 
             arg = getattr(args, param.name)
-            if kind in {Param.POSITIONAL_ONLY, Param.POSITIONAL_OR_KEYWORD}:
+            if param.kind in {Param.POSITIONAL_ONLY, Param.POSITIONAL_OR_KEYWORD}:
                 cmd_args.append(arg)
-            elif kind == Param.VAR_POSITIONAL:
+            elif param.kind == Param.VAR_POSITIONAL:
                 cmd_args.extend(arg)
-            elif kind == Param.VAR_KEYWORD:
+            elif param.kind == Param.VAR_KEYWORD:
                 cmd_kwargs.update(arg or {})
-            elif kind == Param.KEYWORD_ONLY:
-                cmd_kwargs[name] = arg
+            elif param.kind == Param.KEYWORD_ONLY:
+                cmd_kwargs[param.name] = arg
             else:
-                raise AssertionError(f'unsupported argument kind: {kind}')
+                raise AssertionError(f'unsupported argument kind: {param.kind}')
 
         return cmd_args, cmd_kwargs
 

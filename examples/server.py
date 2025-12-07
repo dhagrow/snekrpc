@@ -25,7 +25,6 @@ class Service(snekrpc.Service):
             yield random.randbytes(512)
 
     @snekrpc.command()
-    @snekrpc.param('data', 'test')
     def upload(self, data: Iterable[bytes]) -> None:
         """Accept an upload of an infinite amount of data.
 
