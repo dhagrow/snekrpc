@@ -72,7 +72,7 @@ class Parser:
             # select an output formatter
             fmt = None
             try:
-                fmt = formatter.get(args.format)
+                fmt = formatter.create(args.format)
             except Exception as e:
                 if args.verbose:
                     raise
@@ -85,7 +85,7 @@ class Parser:
         # parser for transport and service args
         parser = argparse.ArgumentParser(parents=[self.base_parser])
 
-        cls = transport.get(args.url)
+        cls = transport.create(args.url)
         if isinstance(cls, Exception):
             self.add_transport_exception(parser, args.url.scheme, cls)
         else:
@@ -95,7 +95,7 @@ class Parser:
         used_aliases = set()
         for name in sorted(args.services):
             name, alias = service.parse_alias(name)
-            cls = service.get_class(name)
+            cls = service.get(name)
 
             alias = alias or cls._name_
             if alias in used_aliases:
@@ -109,7 +109,7 @@ class Parser:
         trn_args, svc_args = self.get_prefixed_args(sub_args)
 
         trn_name = args.url.scheme
-        trn = transport.get(args.url, trn_args.get(trn_name))
+        trn = transport.create(args.url, trn_args.get(trn_name))
 
         # start client or server
         if args.server_mode:
@@ -199,7 +199,7 @@ class Parser:
         # select an output formatter
         fmt: Any | None = None
         try:
-            fmt = formatter.get(args.format)
+            fmt = formatter.create(args.format)
         except Exception as e:
             if args.verbose:
                 raise

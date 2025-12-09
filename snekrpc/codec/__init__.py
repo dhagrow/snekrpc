@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 from collections.abc import Mapping
 from typing import Any
 
@@ -11,7 +10,7 @@ from .. import errors, registry, utils
 CodecMeta = registry.create_metaclass(__name__)
 
 
-def get(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Codec:
+def create(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Codec:
     """Return an instance of the Codec matching *name*."""
     if isinstance(name, Codec):
         return name

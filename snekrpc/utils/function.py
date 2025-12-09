@@ -9,9 +9,7 @@ from inspect import (
     isgeneratorfunction,
     signature,
 )
-from inspect import (
-    _ParameterKind as ParameterKind,
-)
+from inspect import _ParameterKind as ParameterKind
 from typing import Any, Callable, ParamSpec, TypeVar
 
 import msgspec

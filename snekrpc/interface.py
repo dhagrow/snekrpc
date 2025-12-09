@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Any
 
 from . import errors, logs, protocol, registry, utils
 from .codec import Codec
-from .codec import get as get_codec
+from .codec import create as get_codec
 from .service import ServiceProxy
-from .service import get as get_service
+from .service import create as get_service
 from .transport import Connection, Transport
-from .transport import get as get_transport
+from .transport import create as get_transport
 
 if TYPE_CHECKING:
     from .service import Service

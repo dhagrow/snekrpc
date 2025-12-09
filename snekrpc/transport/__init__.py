@@ -15,7 +15,7 @@ TransportMeta = registry.create_metaclass(__name__)
 log = logs.get(__name__)
 
 
-def get(url: str | utils.url.Url | 'Transport', transport_args: Mapping[str, Any] | None = None):
+def create(url: str | utils.url.Url | 'Transport', transport_args: Mapping[str, Any] | None = None):
     """Return a `Transport` instance for *url*."""
     if isinstance(url, Transport):
         return url

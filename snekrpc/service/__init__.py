@@ -37,12 +37,12 @@ def parse_alias(name: str) -> tuple[str, str | None]:
     return base, alias
 
 
-def get_class(name: str):
+def get(name: str):
     """Return the registered Service subclass for ``name``."""
     return ServiceMeta.get(name)
 
 
-def get(
+def create(
     name: str | Service, service_args: Mapping[str, Any] | None = None, alias: str | None = None
 ):
     """Instantiate (or normalize) a service definition."""
@@ -51,7 +51,7 @@ def get(
     elif inspect.isclass(name) and issubclass(name, Service):
         obj = name(**(service_args or {}))
     else:
-        cls = get_class(name)
+        cls = get(name)
         obj = cls(**(service_args or {}))
 
     if alias:

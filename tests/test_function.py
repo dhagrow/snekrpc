@@ -96,7 +96,7 @@ def test_roundtrip_generator():
 ##
 
 
-def test_d2f_null():
+def test_decode_null():
     f = F().null
     s = SignatureSpec('null')
     func = function.decode(s, f)
@@ -107,7 +107,7 @@ def test_d2f_null():
     assert func() == f()
 
 
-def test_d2f_positional():
+def test_decode_positional():
     f = F().positional
     s = SignatureSpec('positional', doc='positional', parameters=[ParameterSpec('a')])
     func = function.decode(s, f)
@@ -118,7 +118,7 @@ def test_d2f_positional():
     assert func(1) == f(1)
 
 
-def test_d2f_default():
+def test_decode_default():
     f = F().default
     s = SignatureSpec('default', doc='default', parameters=[ParameterSpec('a', has_default=True)])
     func = function.decode(s, f)
@@ -130,7 +130,7 @@ def test_d2f_default():
     assert func(1) == f(1)
 
 
-def test_d2f_command():
+def test_decode_command():
     f = F().command
     s = SignatureSpec('command', doc='command', parameters=[ParameterSpec('a', annotation='bool')])
     func = function.decode(s, f)
@@ -141,7 +141,7 @@ def test_d2f_command():
     assert func(True) == f(True)
 
 
-def test_d2f_stream():
+def test_decode_stream():
     f = F().stream
     s = SignatureSpec('stream', doc='stream', is_generator=True)
     func = function.decode(s, f)
@@ -154,7 +154,7 @@ def test_d2f_stream():
 
 
 @pytest.mark.skipif(sys.version_info < (3, 8), reason='requires Python >= 3.8')
-def test_d2f_positional_only():
+def test_decode_positional_only():
     f = F().positional_only
     s = SignatureSpec(
         'positional_only',
@@ -172,7 +172,7 @@ def test_d2f_positional_only():
         func(a=1)
 
 
-def test_d2f_var_positional():
+def test_decode_var_positional():
     f = F().var_positional
     s = SignatureSpec(
         'var_positional',
@@ -189,7 +189,7 @@ def test_d2f_var_positional():
         assert func(*args) == f(*args)
 
 
-def test_d2f_var_keyword():
+def test_decode_var_keyword():
     f = F().var_keyword
     s = SignatureSpec(
         'var_keyword',
@@ -206,7 +206,7 @@ def test_d2f_var_keyword():
         assert func(**args) == f(**args)
 
 
-def test_d2f_mixed_params():
+def test_decode_mixed_params():
     f = F().mixed_params
     s = SignatureSpec(
         'mixed_params',
@@ -226,7 +226,7 @@ def test_d2f_mixed_params():
     assert func(1, 2, 3, 4, d=5, e=6) == f(1, 2, 3, 4, d=5, e=6)
 
 
-def test_d2f_default_no_hint():
+def test_decode_default_no_hint():
     f = F().default_no_hint
     s = SignatureSpec(
         'default_no_hint',
@@ -242,7 +242,7 @@ def test_d2f_default_no_hint():
     assert func(666) == f(666) == 666
 
 
-def test_d2f_kwargs_param():
+def test_decode_kwargs_param():
     f = F().kwargs_param
     s = SignatureSpec(
         'kwargs_param',
@@ -267,7 +267,7 @@ def test_d2f_kwargs_param():
     assert func(a=1, x=2) == f(a=1, x=2)
 
 
-def test_d2f_param_decorator():
+def test_decode_param_decorator():
     f = F().param_decorator
     s = SignatureSpec(
         'param_decorator',
@@ -294,7 +294,7 @@ def test_d2f_param_decorator():
         ('name1', does_not_raise()),
     ],
 )
-def test_d2f_invalid_param_name(name, expectation):
+def test_decode_invalid_param_name(name, expectation):
     s = SignatureSpec('invalid', parameters=[ParameterSpec(name)])
     with expectation:
         function.decode(s, lambda: None)
@@ -305,17 +305,17 @@ def test_d2f_invalid_param_name(name, expectation):
 ##
 
 
-def test_f2d_null():
+def test_encode_null():
     assert function.encode(F().null) == SignatureSpec(name='null')
 
 
-def test_f2d_positional():
+def test_encode_positional():
     s = function.encode(F().positional)
     assert s == SignatureSpec(name='positional', doc='positional', parameters=(ParameterSpec('a'),))
     assert s.parameters[0].kind == Param.POSITIONAL_OR_KEYWORD
 
 
-def test_f2d_default():
+def test_encode_default():
     s = function.encode(F().default)
     assert s == SignatureSpec(
         name='default', doc='default', parameters=(ParameterSpec('a', has_default=True),)
@@ -323,7 +323,7 @@ def test_f2d_default():
     assert s.parameters[0].kind == Param.POSITIONAL_OR_KEYWORD
 
 
-def test_f2d_command():
+def test_encode_command():
     s = function.encode(F().command)
     assert s == SignatureSpec(
         name='command', doc='command', parameters=(ParameterSpec('a', annotation='bool'),)
@@ -331,13 +331,13 @@ def test_f2d_command():
     assert s.parameters[0].kind == Param.POSITIONAL_OR_KEYWORD
 
 
-def test_f2d_stream():
+def test_encode_stream():
     s = function.encode(F().stream)
     assert s == SignatureSpec(name='stream', doc='stream', is_generator=True)
 
 
 @pytest.mark.skipif(sys.version_info < (3, 8), reason='requires Python >= 3.8')
-def test_f2d_positional_only():
+def test_encode_positional_only():
     s = function.encode(F().positional_only)
     assert s == SignatureSpec(
         name='positional_only',
@@ -347,7 +347,7 @@ def test_f2d_positional_only():
     assert s.parameters[0].kind == Param.POSITIONAL_ONLY
 
 
-def test_f2d_var_positional():
+def test_encode_var_positional():
     s = function.encode(F().var_positional)
     assert s == SignatureSpec(
         name='var_positional',
@@ -357,7 +357,7 @@ def test_f2d_var_positional():
     assert s.parameters[0].kind == Param.VAR_POSITIONAL
 
 
-def test_f2d_var_keyword():
+def test_encode_var_keyword():
     s = function.encode(F().var_keyword)
     assert s == SignatureSpec(
         name='var_keyword',
@@ -367,7 +367,7 @@ def test_f2d_var_keyword():
     assert s.parameters[0].kind == Param.VAR_KEYWORD
 
 
-def test_f2d_mixed_params():
+def test_encode_mixed_params():
     s = function.encode(F().mixed_params)
     assert s == SignatureSpec(
         name='mixed_params',
@@ -385,7 +385,7 @@ def test_f2d_mixed_params():
     assert s.parameters[3].kind == Param.VAR_KEYWORD
 
 
-def test_f2d_default_no_hint():
+def test_encode_default_no_hint():
     s = function.encode(F().default_no_hint)
     assert s == SignatureSpec(
         name='default_no_hint',
@@ -396,7 +396,7 @@ def test_f2d_default_no_hint():
 
 
 ### TODO: this looks like an actual regression. The param is not registered
-def test_f2d_kwargs_param():
+def test_encode_kwargs_param():
     s = function.encode(F().kwargs_param)
     assert s == SignatureSpec(
         name='kwargs_param',
@@ -410,7 +410,7 @@ def test_f2d_kwargs_param():
     assert s.parameters[1].kind == Param.KEYWORD_ONLY
 
 
-def test_f2d_param_decorator():
+def test_encode_param_decorator():
     s = function.encode(F().param_decorator)
     assert s == SignatureSpec(
         name='param_decorator',
