@@ -8,6 +8,7 @@ import socket
 import ssl
 import struct
 import threading
+from collections.abc import Iterable
 from typing import Any
 
 from .. import errors, logs, param, utils
@@ -36,19 +37,50 @@ class TcpConnection(Connection):
 
     def recv(self) -> bytes:
         """Receive bytes from the socket."""
-        return recv(self._sock, self._chunk_size)
+        try:
+            return b''.join(self._recviter())
+        except errors.ReceiveInterrupted:
+            return b''
+        except OSError as exc:
+            raise errors.TransportError(exc) from exc
 
     def send(self, data: bytes) -> None:
         """Send bytes through the socket."""
         try:
-            send(self._sock, data)
+            data_len = len(data)
+            size = struct.pack('>I', data_len)
+            self._sock.sendall(size)
+            self._sock.sendall(data)
         except OSError as exc:
             raise errors.TransportError(exc) from exc
 
     def close(self) -> None:
         """Close the socket."""
-        close(self._sock)
+        try:
+            self._sock.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error) as exc:
+            if exc.errno not in (errno.ENOTCONN,):
+                raise
+        self._sock.close()
         self.log.debug('disconnected: %s', self.url)
+
+    def _recviter(self) -> Iterable[bytes]:
+        """Yield chunks for a single message payload."""
+        buf = b''.join(self._recvsize(4))
+        data_len = struct.unpack('>I', buf)[0]
+        for chunk in self._recvsize(data_len):
+            yield chunk
+
+    def _recvsize(self, size: int) -> Iterable[bytes]:
+        """Yield until `size` bytes have been read."""
+        pos = 0
+        chunk_size = min(size, self._chunk_size or CHUNK_SIZE)
+        while pos < size:
+            chunk = self._sock.recv(min(size - pos, chunk_size))
+            if not chunk:
+                raise errors.ReceiveInterrupted()
+            pos += len(chunk)
+            yield chunk
 
 
 class TcpTransport(Transport):
@@ -79,7 +111,7 @@ class TcpTransport(Transport):
         self._sock: socket.socket | None = None
 
         self.timeout = timeout
-        self.backlog = backlog or BACKLOG
+        self.backlog = backlog
         self.chunk_size = chunk_size
 
         self._ssl_cert = ssl_cert
@@ -158,51 +190,3 @@ class TcpTransport(Transport):
     def join(self, timeout: float | None = None) -> None:
         """Wait for the accept loop to finish."""
         self._stopped.wait(timeout)
-
-
-def close(sock: socket.socket) -> None:
-    """Shutdown and close a socket, ignoring common errors."""
-    try:
-        sock.shutdown(socket.SHUT_RDWR)
-    except (OSError, socket.error) as exc:
-        if exc.errno not in (errno.ENOTCONN,):
-            raise
-    sock.close()
-
-
-def recv(sock: socket.socket, chunk_size: int | None = None) -> bytes:
-    """Receive a full message including size prefix."""
-    try:
-        return b''.join(recviter(sock, chunk_size))
-    except errors.ReceiveInterrupted:
-        return b''
-    except OSError as exc:
-        raise errors.TransportError(exc) from exc
-
-
-def recviter(sock: socket.socket, chunk_size: int | None = None):
-    """Yield chunks for a single message payload."""
-    buf = b''.join(recvsize(sock, 4, chunk_size))
-    data_len = struct.unpack('>I', buf)[0]
-    for chunk in recvsize(sock, data_len, chunk_size):
-        yield chunk
-
-
-def recvsize(sock: socket.socket, size: int, chunk_size: int | None = None):
-    """Yield until `size` bytes have been read."""
-    pos = 0
-    chunk_size = min(size, chunk_size or CHUNK_SIZE)
-    while pos < size:
-        chunk = sock.recv(min(size - pos, chunk_size))
-        if not chunk:
-            raise errors.ReceiveInterrupted()
-        pos += len(chunk)
-        yield chunk
-
-
-def send(sock: socket.socket, data: bytes) -> None:
-    """Send a length-prefixed payload."""
-    data_len = len(data)
-    size = struct.pack('>I', data_len)
-    sock.sendall(size)
-    sock.sendall(data)

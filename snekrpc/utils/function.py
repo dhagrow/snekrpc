@@ -106,7 +106,9 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
             param.name,
             None if param_meta is None else param_meta.doc,
             param.kind,
-            None if param.annotation is Parameter.empty else formatannotation(param.annotation),
+            None
+            if param.annotation is Parameter.empty
+            else formatannotation(param.annotation).strip("'"),
             param.default if has_default else None,
             has_default,
             False if param_meta is None else param_meta.hide,

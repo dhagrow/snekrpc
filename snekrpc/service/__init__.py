@@ -192,7 +192,7 @@ def wrap_call(
 
 
 class StreamInitiator:
-    """Iterator shim that replays the first yielded value."""
+    """Generator shim that ensures the generator is started."""
 
     def __init__(self, gen: Iterator[Any]) -> None:
         """Prime the generator while preserving the first item."""
