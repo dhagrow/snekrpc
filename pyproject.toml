@@ -50,6 +50,7 @@ project-excludes = ["tests/**"]
 
 [dependency-groups]
 dev = [
+    "nuitka>=2.8.9",
     "pyrefly>=0.41.3",
     "pytest>=9.0.1",
     "pytest-xdist>=3.8.0",
