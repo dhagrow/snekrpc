@@ -515,6 +515,13 @@ class Parser:
         group = parser.add_argument_group('configuration arguments')
 
         group.add_argument(
+            '-u',
+            '--url',
+            type=utils.url.Url,
+            default=utils.DEFAULT_URL,
+            help='URL to connect or bind to (default: {})'.format(utils.DEFAULT_URL),
+        )
+        group.add_argument(
             '-i',
             '--import',
             action='append',
@@ -542,13 +549,6 @@ class Parser:
 
         group = parser.add_argument_group('client arguments')
 
-        group.add_argument(
-            '-u',
-            '--url',
-            type=utils.url.Url,
-            default=utils.DEFAULT_URL,
-            help='URL to RPC server (default: {})'.format(utils.DEFAULT_URL),
-        )
         group.add_argument(
             '-t',
             '--timeout',
