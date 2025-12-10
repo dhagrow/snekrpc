@@ -6,7 +6,6 @@ from typing import Any
 
 from .. import Service, command, param
 from ..interface import Server
-from ..utils.encoding import to_str
 from . import ServiceSpec, encode
 
 
@@ -24,12 +23,11 @@ class MetadataService(Service):
     def status(self) -> dict[str, Any]:
         """Return codec, transport, and version information."""
         ifc = self._server
-        res = {
+        return {
             'codec': None if ifc.codec is None else ifc.codec._name_,
             'transport': ifc.transport._name_,
             'version': ifc.version,
         }
-        return to_str(res)
 
     @command()
     def service_names(self) -> list[str]:

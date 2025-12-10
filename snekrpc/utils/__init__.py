@@ -8,7 +8,7 @@ from typing import Any, Callable
 from .. import logs
 
 # Imports for convenience
-from . import encoding, format, function, path, retry, url
+from . import format, function, path, retry, url
 
 DEFAULT_URL = 'tcp://127.0.0.1:12321'
 

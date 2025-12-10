@@ -634,7 +634,7 @@ class Parser:
         elif hint == 'bytes':
 
             def conv(value: str) -> Any:
-                return utils.encoding.to_bytes(value)
+                return value.encode()
         elif is_stream_hint(hint):
 
             def conv(value: str):
@@ -672,7 +672,7 @@ class Parser:
         else:
 
             def conv(value: str) -> Any:
-                return utils.encoding.to_str(value)
+                return value
 
         # the converter name is used in error messages
         conv.__name__ = hint or 'str'

@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 import msgspec
 
 from .. import errors, logs, protocol, registry, utils
-from ..utils.encoding import to_str
 
 if TYPE_CHECKING:
     from ..interface import Client
@@ -103,7 +102,7 @@ class ServiceProxy:
         remote metadata service. When `False`, no metadata will be loaded.
         Otherwise, a sequence of command metadata can be provided directly.
         """
-        self._svc_name = to_str(name)
+        self._svc_name = name
         self._client = client
         self._commands: dict[str, Callable[..., Any]] = {}
 
