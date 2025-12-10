@@ -9,7 +9,7 @@ SHELL_HEADER = b'#! /usr/bin/env python\n'
 MAIN = b'from snekrpc import __main__;__main__.main()'
 EXCLUDE = frozenset(['__pycache__'])
 
-PACKAGES = frozenset(['msgpack'])
+PACKAGES = frozenset(['msgpack', 'msgspec', 'msgspec._core'])
 
 log = logs.get(__name__)
 
