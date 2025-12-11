@@ -1,17 +1,17 @@
-from __future__ import absolute_import
+"""TCP transport implementation."""
 
-import io
-import ssl
+from __future__ import annotations
+
 import errno
+import io
 import socket
+import ssl
 import struct
 import threading
+from collections.abc import Iterable
+from typing import Any
 
-from .. import logs
-from .. import utils
-from .. import errors
-from .. import param
-
+from .. import errors, logs, param, utils
 from . import Connection, Transport
 
 BACKLOG = socket.SOMAXCONN
@@ -20,46 +20,98 @@ ACCEPT_TIMEOUT = 0.1
 
 log = logs.get(__name__)
 
+
 class TcpConnection(Connection):
+    """Connection implementation backed by a TCP socket."""
+
     log = log
 
-    def __init__(self, interface, sock, url, chunk_size=None):
-        super(TcpConnection, self).__init__(interface, url)
+    def __init__(
+        self, interface: Any, sock: socket.socket, url: str, chunk_size: int | None = None
+    ) -> None:
+        """Wrap a socket for RPC messaging."""
+        super().__init__(interface, url)
         self._sock = sock
         self._chunk_size = chunk_size
         self.log.debug('connected: %s', self.url)
 
-    def recv(self):
-        return recv(self._sock, self._chunk_size)
-
-    def send(self, data):
+    def recv(self) -> bytes:
+        """Receive bytes from the socket."""
         try:
-            return send(self._sock, data)
-        except socket.error as e:
-            raise errors.TransportError(e)
+            return b''.join(self._recviter())
+        except errors.ReceiveInterrupted:
+            return b''
+        except OSError as exc:
+            raise errors.TransportError(exc) from exc
 
-    def close(self):
-        close(self._sock)
+    def send(self, data: bytes) -> None:
+        """Send bytes through the socket."""
+        try:
+            data_len = len(data)
+            size = struct.pack('>I', data_len)
+            self._sock.sendall(size)
+            self._sock.sendall(data)
+        except OSError as exc:
+            raise errors.TransportError(exc) from exc
+
+    def close(self) -> None:
+        """Close the socket."""
+        try:
+            self._sock.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error) as exc:
+            if exc.errno not in (errno.ENOTCONN,):
+                raise
+        self._sock.close()
         self.log.debug('disconnected: %s', self.url)
 
+    def _recviter(self) -> Iterable[bytes]:
+        """Yield chunks for a single message payload."""
+        buf = b''.join(self._recvsize(4))
+        data_len = struct.unpack('>I', buf)[0]
+        for chunk in self._recvsize(data_len):
+            yield chunk
+
+    def _recvsize(self, size: int) -> Iterable[bytes]:
+        """Yield until `size` bytes have been read."""
+        pos = 0
+        chunk_size = min(size, self._chunk_size or CHUNK_SIZE)
+        while pos < size:
+            chunk = self._sock.recv(min(size - pos, chunk_size))
+            if not chunk:
+                raise errors.ReceiveInterrupted()
+            pos += len(chunk)
+            yield chunk
+
+
 class TcpTransport(Transport):
+    """Expose the transport API over TCP."""
+
     _name_ = 'tcp'
     log = log
     Connection = TcpConnection
 
-    @param('backlog', int, default=BACKLOG)
-    @param('chunk_size', int, default=CHUNK_SIZE)
+    @param('backlog')
+    @param('chunk_size')
     @param('ssl_key', doc='server-side only')
-    def __init__(self, url, timeout=None, backlog=None, chunk_size=None,
-            ssl_cert=None, ssl_key=None):
-        super(TcpTransport, self).__init__(url)
-        url = self._url
-
-        self._addr = (url.host, url.port)
-        self._sock = None
+    def __init__(
+        self,
+        url: str | utils.url.Url,
+        timeout: float | None = None,
+        backlog: int = BACKLOG,
+        chunk_size: int = CHUNK_SIZE,
+        ssl_cert: str | None = None,
+        ssl_key: str | None = None,
+    ) -> None:
+        """Store connection parameters and TLS configuration."""
+        super().__init__(url)
+        target = self._url
+        host = target.host or utils.url.DEFAULT_HOST
+        port = target.port or utils.url.DEFAULT_PORT
+        self._addr = (host, port)
+        self._sock: socket.socket | None = None
 
         self.timeout = timeout
-        self.backlog = backlog or BACKLOG
+        self.backlog = backlog
         self.chunk_size = chunk_size
 
         self._ssl_cert = ssl_cert
@@ -68,29 +120,33 @@ class TcpTransport(Transport):
         self._stop = threading.Event()
         self._stopped = threading.Event()
 
-    def connect(self, client):
-        s = socket.create_connection(self._addr, self.timeout)
+    def connect(self, client: Any) -> TcpConnection:
+        """Create a connection to the configured host."""
+        sock = socket.create_connection(self._addr, self.timeout)
 
         if self._ssl_cert:
             ctx = ssl.create_default_context()
             ctx.load_verify_locations(self._ssl_cert)
             hostname = socket.gethostbyaddr(self._addr[0])[0]
-            s = ctx.wrap_socket(s, server_hostname=hostname)
+            sock = ctx.wrap_socket(sock, server_hostname=hostname)
 
-        return self.Connection(client, s, self._url.netloc, self.chunk_size)
+        return self.Connection(client, sock, self._url.netloc, self.chunk_size)
 
-    def bind(self):
-        self._sock = s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(ACCEPT_TIMEOUT)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(self._addr)
-        s.listen(self.backlog)
+    def bind(self) -> None:
+        """Create and bind a listening socket."""
+        self._sock = sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(ACCEPT_TIMEOUT)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(self._addr)
+        sock.listen(self.backlog)
 
-    def serve(self, server):
+    def serve(self, server: Any) -> None:
+        """Accept incoming connections and handle them in threads."""
         self.bind()
         self.log.info('listening: %s', self.url)
 
-        s = self._sock
+        assert self._sock
+        sock = self._sock
 
         ctx = None
         if self._ssl_cert:
@@ -105,84 +161,32 @@ class TcpTransport(Transport):
         try:
             while not stop.is_set():
                 try:
-                    sock, addr = s.accept()
+                    client_sock, addr = sock.accept()
                 except socket.timeout:
                     continue
-                sock.settimeout(self.timeout)
+                client_sock.settimeout(self.timeout)
 
                 try:
                     if ctx:
-                        sock = ctx.wrap_socket(sock, server_side=True)
+                        client_sock = ctx.wrap_socket(client_sock, server_side=True)
                 except ssl.SSLError:
                     log.exception('ssl error')
                     continue
 
-                utils.start_thread(self.handle, server, sock, addr)
+                utils.start_thread(self.handle, server, client_sock, addr)
         finally:
             stopped.set()
 
-    def handle(self, server, sock, addr):
-        addr = utils.url.format_addr(addr)
-        with self.Connection(server, sock, addr, self.chunk_size) as con:
+    def handle(self, server: Any, sock: socket.socket, addr: tuple[str, int]) -> None:
+        """Wrap `sock` in a Connection and let the server handle requests."""
+        addr_str = utils.url.format_addr(addr)
+        with self.Connection(server, sock, addr_str, self.chunk_size) as con:
             server.handle(con)
 
-    def stop(self):
+    def stop(self) -> None:
+        """Signal the accept loop to exit."""
         self._stop.set()
 
-    def join(self, timeout=None):
+    def join(self, timeout: float | None = None) -> None:
+        """Wait for the accept loop to finish."""
         self._stopped.wait(timeout)
-
-##
-## sockio
-##
-
-def close(sock):
-    try:
-        sock.shutdown(socket.SHUT_RDWR)
-    except (OSError, socket.error) as e:
-        # ignore if not connected
-        if e.errno not in (errno.ENOTCONN,):# errno.EBADF):
-            raise
-    sock.close()
-
-def recv(sock, chunk_size=None):
-    """Receives a block of data from the socket."""
-    try:
-        return b''.join(recviter(sock, chunk_size))
-    except errors.ReceiveInterrupted:
-        return b''
-
-def recviter(sock, chunk_size=None):
-    """Returns an iterator over the data received from the socket.
-
-    Each chunk of data yielded will be equal to or less than
-    *chunk_size*.
-
-    Can raise a `ReceiveInterrupted` exception.
-    """
-    buf = b''.join(recvsize(sock, 4, chunk_size))
-    data_len = struct.unpack('>I', buf)[0]
-    for chunk in recvsize(sock, data_len, chunk_size):
-        yield chunk
-
-def recvsize(sock, size, chunk_size=None):
-    """Returns an iterator over the chunks received from the socket.
-
-    If the socket stops receiving data before *size* bytes have been read, a
-    `ReceiveInterrupted` exception will be raised.
-    """
-    pos = 0
-    chunk_size = min(size, chunk_size or CHUNK_SIZE)
-    while pos < size:
-        chunk = sock.recv(min(size-pos, chunk_size))
-        if not chunk:
-            raise errors.ReceiveInterrupted()
-        pos += len(chunk)
-        yield chunk
-
-def send(sock, data):
-    """Sends *data* over the socket."""
-    data_len = len(data)
-    size = struct.pack('>I', data_len)
-    sock.sendall(size)
-    sock.sendall(data)

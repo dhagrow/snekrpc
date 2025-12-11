@@ -1,36 +1,48 @@
-from __future__ import print_function
+"""Formatter plugin infrastructure."""
 
-import inspect
+from __future__ import annotations
+
 import importlib
+import inspect
+from typing import Any
 
-from .. import utils
 from .. import registry
 
 FormatterMeta = registry.create_metaclass(__name__)
 
-def get(name, **kwargs):
-    """Returns an instance of the Formatter matching *name*."""
+
+def create(name: str | 'Formatter', **kwargs: Any) -> 'Formatter':
+    """Return a formatter by name or pass through existing instances."""
     if isinstance(name, Formatter):
         return name
     cls = load(name) if '.' in name else FormatterMeta.get(name)
     return cls(**kwargs)
 
-def load(name):
-    """Imports and returns the Formatter class matching *name*."""
+
+def load(name: str):
+    """Dynamically import a formatter given `module.Class` notation."""
     mod_name, cls_name = name.rsplit('.', 1)
     mod = importlib.import_module(mod_name)
     return getattr(mod, cls_name)
 
-class Formatter(utils.compat.with_metaclass(FormatterMeta, object)):
-    def process(self, res):
+
+class Formatter(metaclass=FormatterMeta):
+    """Base class for converting RPC responses to user output."""
+
+    _name_: str | None = None
+
+    def process(self, res: Any) -> None:
+        """Automatically iterate through generators and print results."""
         if inspect.isgenerator(res):
-            for r in res:
-                self.print(r)
+            for value in res:
+                self.print(value)
         else:
             self.print(res)
 
-    def print(self, res):
+    def print(self, res: Any) -> None:
+        """Print a formatted representation of `res`."""
         print(self.format(res))
 
-    def format(self, res):
+    def format(self, res: Any) -> Any:
+        """Return the raw value by default; subclasses can override."""
         return res

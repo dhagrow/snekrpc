@@ -1,125 +1,151 @@
+"""Service base classes and helpers."""
+
+from __future__ import annotations
+
 import inspect
 import itertools
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
-from .. import logs
-from .. import utils
-from .. import errors
-from .. import registry
-from ..utils.encoding import to_unicode
+import msgspec
+
+from .. import errors, logs, protocol, registry, utils
+
+if TYPE_CHECKING:
+    from ..interface import Client
 
 log = logs.get(__name__)
 
-def parse_alias(name):
-    try:
-        name, alias = name.split(':')
-    except ValueError:
-        alias = None
-    return name, alias
+ServiceMeta = registry.create_metaclass(__name__)
 
-def get_class(name):
+
+class ServiceSpec(msgspec.Struct, frozen=True):
+    """Description of a callable signature."""
+
+    name: str
+    doc: str | None
+    commands: tuple[utils.function.SignatureSpec, ...]
+
+
+def parse_alias(name: str) -> tuple[str, str | None]:
+    """Split ``name`` into ``module`` and ``alias`` if ``:`` is present."""
+    try:
+        base, alias = name.split(':')
+    except ValueError:
+        return name, None
+    return base, alias
+
+
+def get(name: str):
+    """Return the registered Service subclass for ``name``."""
     return ServiceMeta.get(name)
 
-def get(name, service_args=None, alias=None):
-    """Returns an instance of the Service matching *name*."""
+
+def create(
+    name: str | Service, service_args: Mapping[str, Any] | None = None, alias: str | None = None
+):
+    """Instantiate (or normalize) a service definition."""
     if isinstance(name, Service):
         obj = name
     elif inspect.isclass(name) and issubclass(name, Service):
         obj = name(**(service_args or {}))
     else:
-        cls = get_class(name)
+        cls = get(name)
         obj = cls(**(service_args or {}))
 
-    # rename the instance if any alias was set
     if alias:
         obj._name_ = alias
 
     return obj
 
-def service_to_dict(svc):
-    """Returns service metadata as a dict."""
-    f2d = utils.function.func_to_dict
 
-    d = {
-        'name': svc._name_,
-        'doc': svc.__doc__,
-        }
-    d['commands'] = cmds = []
-
-    # find commands
+def encode(svc: Service) -> ServiceSpec:
+    """Serialize a service definition for metadata responses."""
+    # commands have a `_meta` attribute
+    commands = []
     for name in dir(svc):
         if name.startswith('_'):
             continue
         attr = getattr(svc, name)
-        meta = getattr(attr, '_meta', None)
-        if meta is not None:
-            cmds.append(f2d(attr))
+        if getattr(attr, '_meta', None) is not None:
+            commands.append(utils.function.encode(attr))
 
-    return d
+    return ServiceSpec(
+        svc._name_ or svc.__class__.__name__,
+        svc.__doc__,
+        tuple(commands),
+    )
 
-ServiceMeta = registry.create_metaclass(__name__)
 
-class Service(utils.compat.with_metaclass(ServiceMeta, object)):
-    _name_ = None
+class Service(metaclass=ServiceMeta):
+    """Base class for RPC services."""
 
-    # this is here only to define an __init__ that takes no args
-    # otherwise Python will use a `method-wrapper`, which can somehow produce
-    # a `Signature` with different arguments than what it actually takes
-    def __init__(self):
+    _name_: str | None = None
+
+    def __init__(self) -> None:
+        """Primarily intended for subclass initialization."""
         pass
 
-class ServiceProxy(object):
-    """A proxy class providing access to a remote service.
 
-    If *metadata* is `True`, the metadata service will be used to load metadata
-    for the selected remote service. If `False`, no metadata will be loaded.
-    It is also possible to use *metadata* to pass a metadata dict directly.
-    """
-    def __init__(self, name, client, metadata=True):
-        self._svc_name = to_unicode(name)
+class ServiceProxy:
+    """Client-side helper that exposes remote commands as callables."""
+
+    def __init__(
+        self,
+        name: str,
+        client: Client,
+        command_metadata: bool | Sequence[utils.function.SignatureSpec] = True,
+    ):
+        """Cache remote service metadata and wrap remote commands.
+
+        When `command_metadata` is `True`, metadata will be loaded from the
+        remote metadata service. When `False`, no metadata will be loaded.
+        Otherwise, a sequence of command metadata can be provided directly.
+        """
+        self._svc_name = name
         self._client = client
-        self._commands = cmds = {}
+        self._commands: dict[str, Callable[..., Any]] = {}
 
         self._retry = utils.retry.Retry(
-            client.retry_count, client.retry_interval,
-            errors=[errors.TransportError], logger=log)
+            client.retry_count, client.retry_interval, errors=[errors.TransportError], logger=log
+        )
 
-        # collect metadata. convert commands to functions
-        wrap = lambda c: wrap_call(self, c['name'], c)
-        if metadata is True:
-            meta = ServiceProxy('_meta', client, metadata=False)
-            svc = meta.service(self._svc_name)
-            cmds.update({c['name']: wrap(c) for c in svc['commands']})
-        elif metadata:
-            cmds.update({c['name']: wrap(c) for c in metadata})
+        def wrap_command(spec: utils.function.SignatureSpec):
+            return wrap_call(self, spec.name, spec)
 
-    def __getattr__(self, cmd_name):
+        if command_metadata is True:
+            meta = ServiceProxy('_meta', client, command_metadata=False)
+            svc = msgspec.convert(meta.service(self._svc_name), ServiceSpec)
+            self._commands.update({c.name: wrap_command(c) for c in svc.commands})
+        elif command_metadata:
+            self._commands.update({c.name: wrap_command(c) for c in command_metadata})
+
+    def __getattr__(self, cmd_name: str) -> Callable[..., Any]:
+        """Return a cached callable or lazily wrap the remote command."""
         if self._commands:
-            # return a metadata-based wrapper
             try:
                 return self._commands[cmd_name]
-            except KeyError:
-                raise AttributeError(cmd_name)
-        # return a raw wrapper
+            except KeyError as exc:
+                raise AttributeError(cmd_name) from exc
         return wrap_call(self, cmd_name)
 
-    def __dir__(self):
-        return list(self._commands.keys()) + super(ServiceProxy, self).__dir__()
+    def __dir__(self) -> list[str]:
+        """Add remote command names to ``dir()`` results."""
+        return list(self._commands.keys()) + list(super().__dir__())
 
-def wrap_call(proxy, cmd_name, cmd_def=None):
-    # Protocol.send_cmd() is wrapped by two functions here in order to simplify
-    # connection cleanup for both regular and generator calls.
-    # For that reason call() is a generator, and call_wrap() handles the
-    # case where the command is not a generator
-    def call(*args, **kwargs):
-        # with proxy._client.connect() as con:
+
+def wrap_call(
+    proxy: ServiceProxy, cmd_name: str, cmd_spec: utils.function.SignatureSpec | None = None
+):
+    """Wrap a remote call in retry logic, handling stream outputs."""
+
+    def call(*args: Any, **kwargs: Any):
         con = proxy._client.connect()
         try:
-            proto = con.get_protocol({proxy._svc_name: proxy._commands})
+            proto = protocol.Protocol(proxy._client, con, {proxy._svc_name: proxy._commands})
 
-            res = proto.send_cmd(proxy._svc_name, to_unicode(cmd_name),
-                *args, **to_unicode(kwargs, dict_keys_only=True))
+            res = proto.send_cmd(proxy._svc_name, cmd_name, *args, **kwargs)
 
-            # notify call_wrap of type of response
             isgen = inspect.isgenerator(res)
             yield isgen
 
@@ -132,32 +158,49 @@ def wrap_call(proxy, cmd_name, cmd_def=None):
             proxy._client.close()
             raise
 
-    def call_wrap(*args, **kwargs):
+    def call_value(*args: Any, **kwargs: Any):
         gen = call(*args, **kwargs)
-        isgen = next(gen) # get type of response
-        return iter(StreamInitiator(gen)) if isgen else next(gen)
+        isgen = next(gen)
+        if isgen:
+            raise errors.ParameterError('unexpected stream result')
+        return next(gen)
 
-    if cmd_def and cmd_def.get('isgen'):
-        retry_wrap = lambda *a, **k: proxy._retry.call_gen(call_wrap, *a, **k)
+    def call_stream(*args: Any, **kwargs: Any):
+        gen = call(*args, **kwargs)
+        isgen = next(gen)
+        if not isgen:
+            raise errors.ParameterError('expected stream result')
+        return iter(StreamInitiator(gen))
+
+    if cmd_spec and cmd_spec.is_generator:
+
+        def retry_wrap_gen(*args: Any, **kwargs: Any):
+            yield from proxy._retry.call_gen(call_stream, *args, **kwargs)
+
+        callback = retry_wrap_gen
     else:
-        retry_wrap = lambda *a, **k: proxy._retry.call(call_wrap, *a, **k)
 
-    if not cmd_def:
-        return retry_wrap
-    return utils.function.dict_to_func(cmd_def, retry_wrap)
+        def retry_wrap(*args: Any, **kwargs: Any):
+            return proxy._retry.call(call_value, *args, **kwargs)
 
-class StreamInitiator(object):
-    """Captures the first value of a generator to ensure that it begins
-    execution."""
-    def __init__(self, gen):
-        # cache first result
+        callback = retry_wrap
+
+    if not cmd_spec:
+        return callback
+    return utils.function.decode(cmd_spec, callback)
+
+
+class StreamInitiator:
+    """Generator shim that ensures the generator is started."""
+
+    def __init__(self, gen: Iterator[Any]) -> None:
+        """Prime the generator while preserving the first item."""
         try:
             gen = itertools.chain([next(gen)], gen)
         except StopIteration:
-            # keep the generator to raise StopIteration later
             pass
         self._gen = gen
 
-    def __iter__(self):
-        for x in self._gen:
-            yield x
+    def __iter__(self) -> Iterator[Any]:
+        """Yield the cached first item followed by the original stream."""
+        yield from self._gen

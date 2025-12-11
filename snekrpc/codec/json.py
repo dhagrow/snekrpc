@@ -1,16 +1,23 @@
-from __future__ import absolute_import
+"""JSON codec supporting more complex RPC types."""
 
-import json
-from . import Codec, encode, decode
+from __future__ import annotations
+
+from typing import Any
+
+from msgspec import json
+
+from . import Codec
+
 
 class JsonCodec(Codec):
+    """Codec that serializes RPC payloads using JSON."""
+
     _name_ = 'json'
 
-    def __init__(self, encoding=None):
-        self._encoding = encoding or 'utf8'
+    def encode(self, msg: Any) -> bytes:
+        """Encode Python objects to JSON bytes."""
+        return json.encode(msg)
 
-    def encode(self, msg):
-        return json.dumps(msg, default=encode).encode(self._encoding)
-
-    def decode(self, data):
-        return json.loads(data, object_hook=decode)
+    def decode(self, data: bytes) -> Any:
+        """Decode JSON back into the original object graph."""
+        return json.decode(data)

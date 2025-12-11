@@ -1,6 +1,9 @@
 import itertools
+from collections.abc import Iterable
+from typing import Any
 
 import snekrpc
+
 
 class TestService(snekrpc.Service):
     _name_ = 'test'
@@ -17,12 +20,12 @@ class TestService(snekrpc.Service):
     def params(self, a, b=None, c=True, d=False, *e, **f):
         return a, b, c, d, e, f
 
-    @snekrpc.command(stream='stream')
-    def upstream(self, stream):
+    @snekrpc.command()
+    def upstream(self, stream: Iterable[Any]) -> list[Any]:
         return list(stream)
 
-    @snekrpc.command(limit='int')
-    def downstream(self, limit=None):
+    @snekrpc.command()
+    def downstream(self, limit: int | None = None):
         it = iter(range(limit)) if limit else itertools.count(0)
         while True:
             try:
@@ -30,7 +33,7 @@ class TestService(snekrpc.Service):
             except StopIteration:
                 return
 
-    @snekrpc.command(stream='stream')
-    def dualstream(self, stream):
+    @snekrpc.command()
+    def dualstream(self, stream: Iterable[Any]) -> Iterable[Any]:
         for x in stream:
             yield x

@@ -1,6 +1,7 @@
 import snekrpc
 from snekrpc import logs
 
+
 def main():
     logs.init()
 
@@ -9,6 +10,7 @@ def main():
 
     s = c.service('ex')
     print(s.echo('asdf'))
+
 
 if __name__ == '__main__':
     try:

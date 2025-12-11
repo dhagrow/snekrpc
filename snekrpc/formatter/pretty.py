@@ -1,26 +1,30 @@
-from __future__ import print_function
+"""Pretty-print formatter implementations."""
+
+from __future__ import annotations
 
 import pprint
+from typing import Any
 
 from . import Formatter
-from ..utils import compat
 
-str = compat.str
 
 class PrettyFormatter(Formatter):
+    """Formatter that shows structured output in a friendly way."""
+
     _name_ = 'pretty'
 
-    def print(self, res):
-        s = self.format(res)
-        if s is not None:
-            print(s)
+    def print(self, res: Any) -> None:
+        """Print formatted text when not None."""
+        text = self.format(res)
+        if text is not None:
+            print(text)
 
-    def format(self, res):
+    def format(self, res: Any) -> str | None:
+        """Return a readable string for lists, tuples, and dicts."""
         if res is None:
-            return
-        elif isinstance(res, str):
+            return None
+        if isinstance(res, str):
             return res
-        elif isinstance(res, (list, tuple)):
-            return '\n'.join(str(r) for r in res)
-        else:
-            return pprint.pformat(res)
+        if isinstance(res, (list, tuple)):
+            return '\n'.join(str(value) for value in res)
+        return pprint.pformat(res)

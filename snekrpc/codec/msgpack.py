@@ -1,13 +1,23 @@
-from __future__ import absolute_import
+"""Msgpack codec with helpers for custom RPC types."""
 
-import msgpack
-from . import Codec, encode, decode
+from __future__ import annotations
+
+from typing import Any
+
+from msgspec import msgpack
+
+from . import Codec
+
 
 class MsgpackCodec(Codec):
+    """Codec backed by msgpack for compact binary payloads."""
+
     _name_ = 'msgpack'
 
-    def encode(self, msg):
-        return msgpack.packb(msg, use_bin_type=True, default=encode)
+    def encode(self, msg: Any) -> bytes:
+        """Serialize values to msgpack bytes."""
+        return msgpack.encode(msg)
 
-    def decode(self, data):
-        return msgpack.unpackb(data, use_list=True, raw=False, object_hook=decode)
+    def decode(self, data: bytes) -> Any:
+        """Decode msgpack bytes into Python objects."""
+        return msgpack.decode(data)

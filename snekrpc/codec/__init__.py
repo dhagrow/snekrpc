@@ -1,78 +1,46 @@
-import inspect
-import datetime
+"""Codec base classes and helpers."""
 
-import temporenc
+from __future__ import annotations
 
-from .. import errors
-from .. import utils
-from .. import registry
+from collections.abc import Mapping
+from typing import Any
+
+from .. import errors, registry, utils
 
 CodecMeta = registry.create_metaclass(__name__)
 
-def get(name, codec_args=None):
-    """Returns an instance of the Codec matching *name*."""
+
+def create(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Codec:
+    """Return an instance of the Codec matching *name*."""
     if isinstance(name, Codec):
         return name
     cls = CodecMeta.get(name)
     return cls(**(codec_args or {}))
 
-class Codec(utils.compat.with_metaclass(CodecMeta, object)):
-    _name_ = None
 
-    def encode(self, msg):
+class Codec(metaclass=CodecMeta):
+    """Base class for codecs that know how to encode/decode RPC payloads."""
+
+    _name_: str
+
+    def encode(self, msg: Any) -> bytes:
+        """Serialize `msg` into bytes."""
         raise NotImplementedError('abstract')
 
-    def decode(self, data):
+    def decode(self, data: bytes) -> Any:
+        """Deserialize bytes into Python objects."""
         raise NotImplementedError('abstract')
 
-    def _encode(self, msg):
+    def _encode(self, msg: Any) -> bytes:
         """Wrapper that provides encoding error context. Used internally."""
         try:
             return self.encode(msg)
-        except Exception as e:
-            raise errors.EncodeError('{}: msg={}'.format(e,
-                utils.format.elide(repr(msg))))
+        except Exception as exc:
+            raise errors.EncodeError(f'{exc}: msg={utils.format.elide(repr(msg))}') from exc
 
-    def _decode(self, data):
+    def _decode(self, data: bytes) -> Any:
         """Wrapper that provides decoding error context. Used internally."""
         try:
             return self.decode(data)
-        except Exception as e:
-            raise errors.DecodeError('{}: data={!r}'.format(e,
-                utils.format.elide(repr(data))))
-
-## combined codecs
-
-def encode(obj):
-    if isinstance(obj, datetime.datetime):
-        return encode_datetime(obj)
-    elif inspect.isgenerator(obj):
-        return encode_generator(obj)
-    return obj
-
-def decode(obj):
-    if u'__datetime__' in obj:
-        return decode_datetime(obj)
-    elif u'__generator__' in obj:
-        return decode_generator(obj)
-    return obj
-
-## datetime support
-
-def encode_datetime(obj):
-    return {u'__datetime__': temporenc.packb(obj)}
-
-def decode_datetime(obj):
-    return temporenc.unpackb(obj[u'__datetime__']).datetime()
-
-## generator support
-## Note that this is only intended to mark that *obj* is a generator. It
-## does not encode/decode the contents.
-## This is important for the argument handling in `protocol.py:recv_cmd()`
-
-def encode_generator(obj):
-    return {u'__generator__': None}
-
-def decode_generator(obj):
-    # any generator is fine
-    return (x for x in ())
+        except Exception as exc:
+            raise errors.DecodeError(f'{exc}: data={utils.format.elide(repr(data))!r}') from exc

@@ -1,234 +1,158 @@
-import re
-import copy
-import inspect
-import keyword
-import tokenize
-import collections
+"""Utilities for describing and reconstructing callable signatures."""
 
-try:
-    from inspect import signature, Parameter as Param
-except ImportError:
-    from funcsigs import signature, Parameter as Param
+from __future__ import annotations
 
-from .. import errors
+from inspect import (
+    Parameter,
+    Signature,
+    formatannotation,
+    isgeneratorfunction,
+    signature,
+)
+from inspect import _ParameterKind as ParameterKind
+from typing import Any, Callable, ParamSpec, TypeVar
 
-from . import compat
-from .encoding import to_unicode, to_bytes
+import msgspec
+from makefun import create_function
 
-# tokenize.Name should only be used as a fallback, since Py2 and Py3 define it
-# differently
-_rx_ident = re.compile(r'^{}$'.format(tokenize.Name))
-def is_identifier(s):
-    try:
-        return s.isidentifier()
-    except AttributeError:
-        return bool(_rx_ident.match(s)) and not keyword.iskeyword(s)
+P = ParamSpec('P')
+R = TypeVar('R')
 
-def command(**hints):
-    """Decorator that identifies a function to expose as an RPC command.
 
-    *hints* can be used to set type hints for arguments accepted by the
-    command. A type hint can be a type object or a string. If a type object is
-    passed, it's `__name__` attribute will be used as the type hint. The type
-    hint should indicate to a client developer the type of value that is
-    expected. Use of standard Python types is recommended.
+class ParamMeta(msgspec.Struct):
+    doc: str | None = None
+    hide: bool = False
 
-    To provide more parameter metadata, use the `@param()` decorator.
-    """
-    def decorator(func):
-        cmd_meta = func.__dict__.setdefault('_meta', {})
-        params = cmd_meta.setdefault('params', {})
-        for name, hint in hints.items():
-            hintstr = _hint_to_str(hint)
 
-            if hintstr == 'stream':
-                if 'stream' in cmd_meta:
-                    err = 'only one stream param is possible: {}'
-                    raise errors.ParameterError(err.format(name))
-                cmd_meta['stream'] = name
+class CommandMeta(msgspec.Struct):
+    stream: str | None = None
+    params: dict[str, ParamMeta] = msgspec.field(default_factory=dict)
 
-            params.setdefault(name, {})['hint'] = hintstr
+
+def command() -> Callable[[Callable[P, R]], Callable[P, R]]:
+    """Decorator that records metadata about a command function."""
+
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        """Add command metadata to `func._meta`"""
+        func.__dict__.setdefault('_meta', CommandMeta())
         return func
+
     return decorator
 
-def param(name, hint=None, doc=None, hide=False, **metadata):
-    """Decorator that assigns additional metadata, such as a doc string, to
-    individual command parameters.
 
-    The default *hint* is a unicode string: `str`.
+def param(
+    name: str,
+    doc: str | None = None,
+    hide: bool = False,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Decorator for attaching metadata about a single parameter."""
 
-    Where supported, *hide* can be used to prevent parameters from being
-    displayed. This can be used to hide `**kwargs` when only certain parameters
-    are expected.
-    """
-    def decorator(func):
-        cmd_meta = func.__dict__.setdefault('_meta', {})
-        params = cmd_meta.setdefault('params', {})
-        param = params.setdefault(name, {})
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        """Add param metadata to `func._meta`."""
+        meta: CommandMeta = func.__dict__.setdefault('_meta', CommandMeta())
+        param_meta = meta.params.setdefault(name, ParamMeta())
 
-        if hint:
-            hintstr = _hint_to_str(hint)
+        if doc:
+            param_meta.doc = doc
+        if hide:
+            param_meta.hide = hide
 
-            if hintstr == 'stream':
-                if 'stream' in cmd_meta:
-                    err = 'only one stream param is possible: {}'
-                    raise errors.ParameterError(err.format(name))
-                cmd_meta['stream'] = name
-
-            param['hint'] = hintstr
-
-        if doc: param['doc'] = doc
-        if hide: param['hide'] = hide
-        param.update(metadata)
         return func
+
     return decorator
 
-def _hint_to_str(hint):
-    """Internal. Converts type hints to strings."""
-    if not hint:
-        name = 'str'
-    elif isinstance(hint, (compat.str, bytes)):
-        name = hint
-    else:
-        name = hint.__name__
-        if name == 'str':
-            name = 'str' if compat.PY3 else 'bytes'
-        elif name == 'unicode':
-            name = 'str'
-    return to_unicode(name)
 
-def func_to_dict(func, remove_self=False):
-    """Returns metadata for *func* in a dict.
+class ParameterSpec(msgspec.Struct, frozen=True):
+    """Description of a single callable parameter."""
 
-    If *remove_self* is `True` ...
+    name: str
+    doc: str | None = None
+    kind: ParameterKind = ParameterKind.POSITIONAL_OR_KEYWORD
+    annotation: str | None = None
+    default: Any | None = None
+    has_default: bool = False
+    hide: bool = False
+
+
+class SignatureSpec(msgspec.Struct, frozen=True):
+    """Description of a callable signature."""
+
+    name: str
+    doc: str | None = None
+    parameters: tuple[ParameterSpec, ...] = ()
+    return_annotation: str | None = None
+    is_generator: bool = False
+
+
+def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec:
+    """Encode the signature of `func` into a serializable `SignatureSpec`.
+
+    If `remove_self` is `True`, remove the first argument.
     """
-    d = {
-        'name': func.__name__,
-        'doc': func.__doc__,
-        }
-
-    # we mutate these dicts, so make copies
-    cmd_meta = copy.deepcopy(getattr(func, '_meta', {}))
-    cmd_params = cmd_meta.pop('params', {})
-
     sig = signature(func)
 
     if remove_self:
-        # remove 'self' parameter
-        sig = sig.replace(parameters=list(sig.parameters.values())[1:])
+        parameters = list(sig.parameters.values())[1:]
+        sig = sig.replace(parameters=parameters)
 
-    # add parameters
-    params = d['params'] = []
-    for p in sig.parameters.values():
-        param = {
-            'name': p.name,
-            'kind': int(p.kind),
-            }
+    meta: CommandMeta | None = getattr(func, '_meta', None)
 
-        hint = param.get('hint')
-        if p.default is not p.empty:
-            param['default'] = p.default
-            # if no hint, set an automatic hint based on the default value
-            if not hint and p.default is not None:
-                param['hint'] = type(p.default).__name__
+    params: dict[str, ParameterSpec] = {}
+    for param in sig.parameters.values():
+        param_meta = None if meta is None else meta.params.get(param.name)
 
-        param.update(cmd_params.pop(p.name, {}))
+        has_default = param.default is not Parameter.empty
+        params[param.name] = ParameterSpec(
+            param.name,
+            None if param_meta is None else param_meta.doc,
+            param.kind,
+            None
+            if param.annotation is Parameter.empty
+            else formatannotation(param.annotation).strip("'"),
+            param.default if has_default else None,
+            has_default,
+            False if param_meta is None else param_meta.hide,
+        )
 
-        params.append(param)
+    # add any params defined by the `param()` decorator
+    if meta is not None:
+        for name, param_meta in meta.params.items():
+            if name in params:
+                continue
+            params[name] = ParameterSpec(
+                name, param_meta.doc, ParameterKind.KEYWORD_ONLY, hide=param_meta.hide
+            )
 
-    # add missing hints as params
-    for name, param in cmd_params.items():
-        param['name'] = name
-        param.setdefault('kind', int(Param.KEYWORD_ONLY))
-        params.append(param)
+    return SignatureSpec(
+        func.__name__,
+        func.__doc__,
+        tuple(params.values()),
+        None
+        if sig.return_annotation is Signature.empty
+        else formatannotation(sig.return_annotation),
+        isgeneratorfunction(func),
+    )
 
-    # stream
-    if 'stream' in cmd_meta:
-        d['stream'] = cmd_meta.pop('stream')
 
-    if inspect.isgeneratorfunction(func):
-        d['isgen'] = True
+def decode(spec: SignatureSpec, func: Callable[..., Any]) -> Callable[..., Any]:
+    """Recreate a callable from a `SignatureSpec`."""
+    if spec.is_generator != isgeneratorfunction(func):
+        func_type = 'generator' if spec.is_generator else 'regular'
+        raise TypeError(f'expected {func_type} function to decode signature')
 
-    if cmd_meta:
-        # add any left over metadata
-        d['meta'] = cmd_meta
+    params = []
+    for param in spec.parameters:
+        params.append(
+            Parameter(
+                name=param.name,
+                kind=param.kind,
+                default=param.default if param.has_default else Parameter.empty,
+                annotation=param.annotation if param.annotation is not None else Signature.empty,
+            )
+        )
 
-    return d
-
-def dict_to_func(d, callback):
-    """Returns a function based on the metadata dict *d*, as created by
-    `func_to_dict`.
-
-    *callback* must be a function which will be wrapped and called by the
-    returned function.
-
-    Note that `exec` is used to create the wrapping function. This exposes a
-    potential security risk, however care is taken to ensure that the only user
-    provided input that is executed consists of function parameter names which
-    must be valid Python identifiers. It should therefore be safe to use from a
-    security perspective.
-
-    `POSITIONAL_ONLY` parameters are silently converted to
-    `POSITIONAL_OR_KEYWORD` parameters.
-    """
-    sig_defn = []
-    sig_call = []
-
-    meta = copy.deepcopy(d)
-    params = collections.OrderedDict()
-
-    for p in meta.pop('params'):
-        if not is_identifier(p['name']):
-            raise ValueError('invalid parameter name: {}'.format(p['name']))
-        kind = {
-            0: Param.POSITIONAL_ONLY,
-            1: Param.POSITIONAL_OR_KEYWORD,
-            2: Param.VAR_POSITIONAL,
-            3: Param.KEYWORD_ONLY,
-            4: Param.VAR_KEYWORD,
-            }[p['kind']]
-
-        if kind == Param.KEYWORD_ONLY:
-            # we assume these are part of kwargs
-            continue
-        elif kind == Param.VAR_POSITIONAL:
-            name = '*' + p['name']
-        elif kind == Param.VAR_KEYWORD:
-            name = '**' + p['name']
-        else:
-            name = p['name']
-
-        def_name = name
-        if 'default' in p:
-            def_name += '=' + repr(p['default'])
-
-        sig_defn.append(def_name)
-        sig_call.append(name)
-
-        params[p.pop('name')] = p
-
-    meta['params'] = params
-
-    sig_defn = ', '.join(sig_defn)
-    sig_call = ', '.join(sig_call)
-
-    isgen = meta.pop('isgen', False)
-    if isgen:
-        tpl = 'def {}({}):\n  for x in callback({}): yield x'
-    else:
-        tpl = 'def {}({}): return callback({})'
-    src = tpl.format(d['name'], sig_defn, sig_call)
-
-    # compile
-    g = {'callback': callback}
-    exec(src, g) # pylint: disable=exec-used
-
-    func = g[meta.pop('name')]
-    func.__doc__ = meta.pop('doc', None)
-    func.__dict__['_meta'] = meta
-
-    return func
-
-def get_func_name(name):
-    # func.__name__ must be bytes in Python2
-    return to_unicode(name) if compat.PY3 else to_bytes(name)
+    return_annotation = (
+        spec.return_annotation if spec.return_annotation is not None else Signature.empty
+    )
+    sig = Signature(parameters=params, return_annotation=return_annotation)
+    return create_function(sig, func, func_name=spec.name)

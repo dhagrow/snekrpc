@@ -1,8 +1,14 @@
+"""Filesystem helpers for the utility layer."""
+
+from __future__ import annotations
+
+import errno
+import importlib
 import io
 import os
-import errno
 import pkgutil
-import importlib
+from collections.abc import Generator
+from typing import BinaryIO
 
 from .. import logs
 
@@ -10,57 +16,58 @@ log = logs.get(__name__)
 
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-def base_path(*names):
+
+def base_path(*names: str) -> str:
+    """Return an absolute path anchored at the repository root."""
     return os.path.join(BASE_PATH, *names)
 
-def ensure_dirs(path, mode=0o755):
-    """Creates *path* if it does not exist. Does nothing otherwise."""
+
+def ensure_dirs(path: str, mode: int = 0o755) -> None:
+    """Create *path* if it does not exist."""
     try:
         os.makedirs(path, mode)
     except OSError:
         pass
 
-def discard_file(path):
-    """Removes *path* if it exists. Does nothing otherwise."""
+
+def discard_file(path: str) -> None:
+    """Remove *path* if it exists."""
     try:
         os.remove(path)
-    except OSError as e:
-        if e.errno != errno.ENOENT:
+    except OSError as exc:
+        if exc.errno != errno.ENOENT:
             raise
 
-def iter_file(fp, chunk_size=None):
-    """Iterates through a file object in chunks."""
-    chunk_size = chunk_size or io.DEFAULT_BUFFER_SIZE
-    for chunk in iter(lambda: fp.read(chunk_size), b''):
+
+def iter_file(fp: BinaryIO, chunk_size: int | None = None) -> Generator[bytes, None, None]:
+    """Iterate through a file object in chunks."""
+    size = chunk_size or io.DEFAULT_BUFFER_SIZE
+    while chunk := fp.read(size):
         yield chunk
 
-def import_package(pkgname):
-    """Imports all modules in a package (aka directory).
 
-    Returns a dict of `{<modname>: <exc>}` for modules that raise an exception
-    on import.
-    """
-    exceptions = {}
-
+def import_package(pkgname: str) -> dict[str, Exception]:
+    """Import all modules in *pkgname* and return any exceptions that occur."""
+    exceptions: dict[str, Exception] = {}
     path = base_path(pkgname.replace('.', '/'))
     for _, modname, ispkg in pkgutil.iter_modules([path]):
-        if ispkg: continue
+        if ispkg:
+            continue
         exc = import_module(modname, pkgname)
         if exc:
             exceptions[modname] = exc
-
     return exceptions
 
-def import_module(modname, pkgname=None):
-    """Imports a module, optionally from a package.
 
-    Returns any exceptions."""
+def import_module(modname: str, pkgname: str | None = None) -> Exception | None:
+    """Import a module, optionally relative to *pkgname*."""
     name = '.'.join(filter(None, [pkgname, modname]))
     try:
         log.debug('loading: %s', name)
         if pkgname:
-            importlib.import_module('.' + modname, pkgname)
+            importlib.import_module(f'.{modname}', pkgname)
         else:
             importlib.import_module(modname)
-    except Exception as e:
-        return e
+    except Exception as exc:
+        return exc
+    return None

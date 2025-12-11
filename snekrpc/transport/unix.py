@@ -1,53 +1,73 @@
-from __future__ import absolute_import
+"""Unix domain socket transport built atop the TCP transport."""
+
+from __future__ import annotations
 
 import socket
+from typing import Any
 
-from .. import logs
-from .. import utils
-from .. import param
-
+from .. import logs, param, utils
 from . import tcp
 
 ACCEPT_TIMEOUT = 0.1
 
 log = logs.get(__name__)
 
+
 class UnixConnection(tcp.TcpConnection):
+    """Connection wrapper customized for Unix sockets."""
+
     log = log
+
 
 class UnixTransport(tcp.TcpTransport):
+    """Transport that communicates over Unix domain sockets."""
+
     _name_ = 'unix'
     log = log
-    Connection = UnixConnection
+    Connection: type[tcp.TcpConnection] = UnixConnection
 
-    @param('backlog', int, default=tcp.BACKLOG)
-    @param('chunk_size', int, default=tcp.CHUNK_SIZE)
-    def __init__(self, url, timeout=None, backlog=None, chunk_size=None):
-        super(UnixTransport, self).__init__(url, timeout, backlog, chunk_size)
-        self._path = self._url.path
+    @param('backlog')
+    @param('chunk_size')
+    def __init__(
+        self,
+        url: str | utils.url.Url,
+        timeout: float | None = None,
+        backlog: int = tcp.BACKLOG,
+        chunk_size: int = tcp.CHUNK_SIZE,
+    ) -> None:
+        """Interpret the filesystem path from the URL."""
+        super().__init__(url, timeout, backlog, chunk_size)
+        path = self._url.path
+        if path is None:
+            raise ValueError('unix url must include a path')
+        self._path: str = path
 
-    def connect(self, client):
-        self._sock = s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.settimeout(self.timeout)
-        s.connect(self._path)
-        return self.Connection(client, s, self._path, self.chunk_size)
+    def connect(self, client: Any) -> tcp.TcpConnection:
+        """Connect to the server's Unix socket."""
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(self.timeout)
+        sock.connect(self._path)
+        return self.Connection(client, sock, self._path, self.chunk_size)
 
-    def bind(self):
-        # remove existing socket
+    def bind(self) -> None:
+        """Bind and listen on the configured Unix socket path."""
         utils.path.discard_file(self._path)
 
-        self._sock = s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.settimeout(ACCEPT_TIMEOUT)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(self._path)
-        s.listen(self.backlog)
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(ACCEPT_TIMEOUT)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(self._path)
+        sock.listen(self.backlog)
+        self._sock = sock
 
-    def serve(self, server):
+    def serve(self, server: Any) -> None:
+        """Serve requests and clean up socket files afterward."""
         try:
-            super(UnixTransport, self).serve(server)
+            super().serve(server)
         finally:
             utils.path.discard_file(self._path)
 
-    def handle(self, server, sock, addr):
+    def handle(self, server: Any, sock: socket.socket, addr: tuple[str, int] | str) -> None:
+        """Handle an accepted Unix socket connection."""
         with self.Connection(server, sock, self._path, self.chunk_size) as con:
             server.handle(con)

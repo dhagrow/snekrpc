@@ -1,36 +1,45 @@
+"""Metadata service that introspects registered services."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from .. import Service, command, param
-from ..utils.encoding import to_unicode
-from . import service_to_dict as s2d
+from ..interface import Server
+from . import ServiceSpec, encode
+
 
 class MetadataService(Service):
-    """Provides commands that return server and service metadata.
+    """Expose codec/version info and service definitions."""
 
-    Note that this service is handled as a special case in several places.
-    """
     _name_ = 'meta'
 
     @param('server', hide=True)
-    def __init__(self, server):
+    def __init__(self, server: Server) -> None:
+        """Store the server instance for later inspection."""
         self._server = server
 
     @command()
-    def status(self):
+    def status(self) -> dict[str, Any]:
+        """Return codec, transport, and version information."""
         ifc = self._server
-        res = {
-            'codec': ifc.codec._name_,
+        return {
+            'codec': None if ifc.codec is None else ifc.codec._name_,
             'transport': ifc.transport._name_,
             'version': ifc.version,
-            }
-        return to_unicode(res)
+        }
 
     @command()
-    def service_names(self):
-        return self._server.service_names()
+    def service_names(self) -> list[str]:
+        """Return the exported service names."""
+        return list(self._server.service_names())
 
     @command()
-    def services(self):
-        return to_unicode([s2d(svc) for svc in self._server.services()])
+    def services(self) -> list[ServiceSpec]:
+        """Return metadata for every service."""
+        return [encode(svc) for svc in self._server.services()]
 
     @command()
-    def service(self, name):
-        return to_unicode(s2d(self._server.service(name)))
+    def service(self, name: str) -> ServiceSpec:
+        """Return metadata for an individual service."""
+        return encode(self._server.service(name))
