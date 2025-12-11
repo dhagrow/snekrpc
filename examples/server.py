@@ -15,6 +15,10 @@ class Service(snekrpc.Service):
         return value
 
     @snekrpc.command()
+    def chunk(self) -> bytes:
+        return random.randbytes(512)
+
+    @snekrpc.command()
     def download(self) -> Iterable[bytes]:
         """Start a download of an infinite amount of data.
 
