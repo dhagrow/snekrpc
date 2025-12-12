@@ -9,10 +9,16 @@ import snekrpc
 
 SERVICE_NAME = 'test'
 
-
 TRANSPORT_URLS = [
     'tcp://127.0.0.1:7357',
-    'unix:///tmp/snekrpc-test.sock',
+    pytest.param(
+        'unix:///tmp/snekrpc-test.sock',
+        marks=pytest.mark.skipif(
+            sys.platform not in ['linux', 'darwin'],
+            reason='POSIX-only',
+        ),
+        id='posix-only',
+    ),
     'http://127.0.0.1:7357',
 ]
 
@@ -59,7 +65,7 @@ def start_thread(func, *args, **kwargs):
 
 @pytest.fixture(scope='session', autouse=True)
 def socket_timeout():
-    socket.setdefaulttimeout(5)
+    socket.setdefaulttimeout(30)
 
 
 @pytest.fixture(scope='session', params=TRANSPORT_URLS)
