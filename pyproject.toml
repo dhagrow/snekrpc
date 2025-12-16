@@ -13,17 +13,17 @@ requires-python = ">=3.10"
 snekrpc = "snekrpc.__main__:main"
 snekrpc-pack = "snekrpc.pack:main"
 
-[tool.uv]
-package = true
+[build-system]
+requires = ["uv_build>=0.9.17,<0.10.0"]
+build-backend = "uv_build"
 
-[tool.setuptools]
-py-modules = ["snekrpc"]
+[tool.uv.build-backend]
+module-name = "snekrpc"
+module-root = ""
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["snekrpc"]
+[tool.uvbox.package]
+name = "snekrpc"
+script = "snekrpc"
 
 [tool.ruff]
 line-length = 100
@@ -54,4 +54,5 @@ dev = [
     "pytest>=9.0.1",
     "pytest-xdist>=3.8.0",
     "ruff>=0.14.5",
+    "uvbox>=1.0.1",
 ]
