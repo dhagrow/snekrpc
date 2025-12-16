@@ -4,7 +4,7 @@
 Terminal utilities for the CLI.
 
 These functions are meant to provide useful functionality for output modules.
-(Set on the CLI or pack script with the --output-module flag.)
+(Set on the CLI with the --output-module flag.)
 """
 
 import calendar
