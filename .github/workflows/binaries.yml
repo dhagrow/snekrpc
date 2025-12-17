@@ -24,7 +24,7 @@ jobs:
         run: uv sync --locked --all-extras --dev
       - name: Build uvbox artifacts
         run: uv run uvbox pypi
-      - name: Archive uvbox artifacts
+      - name: Upload uvbox artifacts
         uses: actions/upload-artifact@v4
         with:
           name: binaries
