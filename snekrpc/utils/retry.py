@@ -28,7 +28,7 @@ class Retry:
         count: int | None = None,
         interval: float | None = None,
         errors: Sequence[type[BaseException]] | None = None,
-        logger: Any | None = None,
+        logger: logs.Logger = log,
         log_template: str | None = None,
     ) -> None:
         """Configure retry counts, intervals, and error classes."""
@@ -36,7 +36,6 @@ class Retry:
         self.interval = RETRY_INTERVAL if interval is None else interval
         self.errors = tuple(errors or RETRY_ERRORS)
 
-        logger = logger or log
         self.log = logger.exception if logger.isEnabledFor(logs.DEBUG) else log.warning
         self.log_template = log_template or RETRY_LOG_TEMPLATE
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from logging import DEBUG, INFO, Formatter, StreamHandler, getLogger
+from logging import Logger as Logger
 from types import TracebackType
 
 get = getLogger

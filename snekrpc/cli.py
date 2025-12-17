@@ -637,7 +637,7 @@ class Parser:
                 return value.encode()
         elif is_stream_hint(hint):
 
-            def conv(value: str):
+            def conv(value: str) -> Any:
                 fp = cast(BinaryIO, argparse.FileType('rb')(value))
                 return utils.path.iter_file(fp)
         elif hint == 'keyword':
@@ -646,29 +646,29 @@ class Parser:
                 return value.split('=', 1)
         elif hint == 'datetime':
 
-            def conv(v):
+            def conv(value: str) -> Any:
                 try:
-                    return datetime.datetime.strptime(v, DATETIME_FORMAT)
+                    return datetime.datetime.strptime(value, DATETIME_FORMAT)
                 except ValueError:
                     try:
-                        return datetime.datetime.strptime(v, DATE_FORMAT)
+                        return datetime.datetime.strptime(value, DATE_FORMAT)
                     except Exception:
                         return datetime.datetime.combine(
                             datetime.date.today(),
-                            datetime.datetime.strptime(v, TIME_FORMAT).time(),
+                            datetime.datetime.strptime(value, TIME_FORMAT).time(),
                         )
         elif hint == 'stream':
 
-            def conv(value: str):
+            def conv(value: str) -> Any:
                 return (x for x in value)
         elif hint in COLLECTION_TYPES:
 
-            def conv(v):
+            def conv(value: str) -> Any:
                 try:
-                    with open(v) as f:
+                    with open(value) as f:
                         return json.load(f)
                 except Exception:
-                    return json.loads(v)
+                    return json.loads(value)
         else:
 
             def conv(value: str) -> Any:

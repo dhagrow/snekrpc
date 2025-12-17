@@ -109,7 +109,7 @@ def test_decode_null():
 
 def test_decode_positional():
     f = F().positional
-    s = SignatureSpec('positional', doc='positional', parameters=[ParameterSpec('a')])
+    s = SignatureSpec('positional', doc='positional', parameters=(ParameterSpec('a'),))
     func = function.decode(s, f)
 
     assert func.__name__ == f.__name__
@@ -120,7 +120,7 @@ def test_decode_positional():
 
 def test_decode_default():
     f = F().default
-    s = SignatureSpec('default', doc='default', parameters=[ParameterSpec('a', has_default=True)])
+    s = SignatureSpec('default', doc='default', parameters=(ParameterSpec('a', has_default=True),))
     func = function.decode(s, f)
 
     assert func.__name__ == f.__name__
@@ -132,7 +132,7 @@ def test_decode_default():
 
 def test_decode_command():
     f = F().command
-    s = SignatureSpec('command', doc='command', parameters=[ParameterSpec('a', annotation='bool')])
+    s = SignatureSpec('command', doc='command', parameters=(ParameterSpec('a', annotation='bool'),))
     func = function.decode(s, f)
 
     assert func.__name__ == f.__name__
@@ -159,7 +159,7 @@ def test_decode_positional_only():
     s = SignatureSpec(
         'positional_only',
         doc='positional_only',
-        parameters=[ParameterSpec('a', kind=ParameterKind.POSITIONAL_ONLY)],
+        parameters=(ParameterSpec('a', kind=ParameterKind.POSITIONAL_ONLY),),
     )
     func = function.decode(s, f)
 
@@ -177,7 +177,7 @@ def test_decode_var_positional():
     s = SignatureSpec(
         'var_positional',
         doc='var_positional',
-        parameters=[ParameterSpec('a', kind=ParameterKind.VAR_POSITIONAL)],
+        parameters=(ParameterSpec('a', kind=ParameterKind.VAR_POSITIONAL),),
     )
     func = function.decode(s, f)
 
@@ -194,7 +194,7 @@ def test_decode_var_keyword():
     s = SignatureSpec(
         'var_keyword',
         doc='var_keyword',
-        parameters=[ParameterSpec('a', kind=ParameterKind.VAR_KEYWORD)],
+        parameters=(ParameterSpec('a', kind=ParameterKind.VAR_KEYWORD),),
     )
     func = function.decode(s, f)
 
@@ -211,12 +211,12 @@ def test_decode_mixed_params():
     s = SignatureSpec(
         'mixed_params',
         doc='mixed_params',
-        parameters=[
+        parameters=(
             ParameterSpec('a'),
             ParameterSpec('b', has_default=True),
             ParameterSpec('c', kind=ParameterKind.VAR_POSITIONAL),
             ParameterSpec('d', kind=ParameterKind.VAR_KEYWORD),
-        ],
+        ),
     )
     func = function.decode(s, f)
 
@@ -231,7 +231,7 @@ def test_decode_default_no_hint():
     s = SignatureSpec(
         'default_no_hint',
         doc='default_no_hint',
-        parameters=[ParameterSpec('a', default=42, has_default=True)],
+        parameters=(ParameterSpec('a', default=42, has_default=True),),
     )
     func = function.decode(s, f)
 
@@ -247,10 +247,10 @@ def test_decode_kwargs_param():
     s = SignatureSpec(
         'kwargs_param',
         doc='kwargs_param',
-        parameters=[
+        parameters=(
             ParameterSpec('a', annotation='int', kind=ParameterKind.KEYWORD_ONLY),
             ParameterSpec('kwargs', kind=ParameterKind.VAR_KEYWORD),
-        ],
+        ),
     )
     func = function.decode(s, f)
 
@@ -272,7 +272,7 @@ def test_decode_param_decorator():
     s = SignatureSpec(
         'param_decorator',
         doc='kwargs_param',
-        parameters=[ParameterSpec('a', doc='a param', annotation='str')],
+        parameters=(ParameterSpec('a', doc='a param', annotation='str'),),
     )
     func = function.decode(s, f)
 
@@ -295,7 +295,7 @@ def test_decode_param_decorator():
     ],
 )
 def test_decode_invalid_param_name(name, expectation):
-    s = SignatureSpec('invalid', parameters=[ParameterSpec(name)])
+    s = SignatureSpec('invalid', parameters=(ParameterSpec(name),))
     with expectation:
         function.decode(s, lambda: None)
 

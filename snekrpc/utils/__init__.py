@@ -36,7 +36,6 @@ def start_thread(func: Callable[..., Any], *args: Any, **kwargs: Any) -> threadi
 
 __all__ = [
     'DEFAULT_URL',
-    'encoding',
     'format',
     'function',
     'path',
