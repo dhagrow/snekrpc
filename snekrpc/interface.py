@@ -56,7 +56,8 @@ class Client(Interface):
         retry_interval: float | None = None,
     ) -> None:
         super().__init__(transport, codec, version)
-        self._con: Connection
+        # TODO replace this with a proper connection pool
+        self._con: Connection | None = None
         self.retry_count = retry_count
         self.retry_interval = retry_interval
 
@@ -66,12 +67,13 @@ class Client(Interface):
                 self._con = self.transport.connect(self)
             except Exception as exc:
                 raise errors.TransportError(exc) from exc
+        assert self._con
         return self._con
 
     def close(self) -> None:
         if self._con:
             self._con.close()
-        del self._con
+        self._con = None
 
     def __getitem__(self, name: str) -> ServiceProxy:
         return self.service(name)
