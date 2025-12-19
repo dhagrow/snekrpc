@@ -153,7 +153,7 @@ class Protocol:
         """Receive and decode a complete message."""
         data = self.res_handshake()
         if not data:
-            return
+            return None
 
         if (codec := self._ifc.codec) is None:
             raise errors.TransportError('codec is not set')

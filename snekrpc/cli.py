@@ -212,8 +212,8 @@ class Parser:
         cmd_args, cmd_kwargs = self.get_command_args(args)
 
         # get the command function
-        svc = client.service(args.svc_name, metadata=[args.cmd_meta])
-        func = getattr(svc, args.cmd_name)
+        proxy = client.service(args.svc_name, metadata=[args.cmd_meta])
+        func = getattr(proxy, args.cmd_name)
 
         # call the command
         res: Any | None = None
@@ -271,8 +271,8 @@ class Parser:
         pass to the selected command."""
         cmd: SignatureSpec = args.cmd_meta
 
-        cmd_args = []
-        cmd_kwargs = {}
+        cmd_args: list[Any] = []
+        cmd_kwargs: dict[str, Any] = {}
 
         for param in cmd.parameters:
             if param.hide:

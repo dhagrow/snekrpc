@@ -82,10 +82,6 @@ class Service(metaclass=ServiceMeta):
 
     _name_: str | None = None
 
-    def __init__(self) -> None:
-        """Primarily intended for subclass initialization."""
-        pass
-
 
 class ServiceProxy:
     """Client-side helper that exposes remote commands as callables."""
