@@ -1,3 +1,4 @@
+import argparse
 import random
 from typing import Any, Iterable
 
@@ -40,9 +41,15 @@ class Service(snekrpc.Service):
 
 
 def main():
-    logs.init()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', default='tcp://localhost:1234')
+    parser.add_argument('-c', default='msgpack')
+    parser.add_argument('-v', default=0, action='count')
+    args = parser.parse_args()
 
-    s = snekrpc.Server('tcp://localhost:1234')
+    logs.init(args.v)
+
+    s = snekrpc.Server(args.u, codec=args.c)
     s.add_service(Service(), alias='ex')
     s.add_service('meta')
     s.serve()
