@@ -11,7 +11,7 @@ from .. import registry
 FormatterMeta = registry.create_metaclass(__name__)
 
 
-def create(name: str | 'Formatter', **kwargs: Any) -> 'Formatter':
+def create(name: str | Formatter, **kwargs: Any) -> 'Formatter':
     """Return a formatter by name or pass through existing instances."""
     if isinstance(name, Formatter):
         return name
