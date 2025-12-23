@@ -25,6 +25,8 @@ COLLECTION_TYPES = frozenset(['list', 'dict'])
 Args = argparse.Namespace
 CommandMeta = dict[str, Any]
 
+log = logs.get(__name__)
+
 
 def main() -> None:
     """Convenient entry-point."""
@@ -216,15 +218,14 @@ class Parser:
         func = getattr(proxy, args.cmd_name)
 
         # call the command
-        res: Any | None = None
         try:
             res = func(*cmd_args, **cmd_kwargs)
-        except errors.RemoteError as e:
+            assert res is not None
+            fmt.process(res)
+        except Exception as e:
             if verbose:
                 raise
-            parser.error(str(e))
-        assert res is not None
-        fmt.process(res)
+            log.error('command error: %s', e)
 
     def start_server(
         self,

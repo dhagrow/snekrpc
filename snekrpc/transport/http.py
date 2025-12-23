@@ -132,13 +132,8 @@ class HTTPClientConnection(Connection):
         """Initialize the HTTPConnection and perform the POST handshake."""
         super().__init__(client_ifc, url)
         self._res: client.HTTPResponse | None = None
-        self._con = http = client.HTTPConnection(url)
-        http.auto_open = False
-        self.connect()
 
-    def connect(self) -> None:
-        """Open the HTTP connection and send headers."""
-        con = self._con
+        self._con = con = client.HTTPConnection(url)
         con.connect()
         log.debug('connected: %s', self.url)
 
@@ -175,7 +170,8 @@ class HTTPClientConnection(Connection):
             raise errors.TransportError(exc) from exc
 
     def close(self) -> None:
-        """Log the disconnection (HTTPConnection closes itself)."""
+        """Close the connection."""
+        self._con.close()
         log.debug('disconnected: %s', self.url)
 
 

@@ -93,18 +93,11 @@ class Protocol:
         """Main loop that receives messages and dispatches commands."""
         while True:
             try:
-                msg = self.recv_msg()
-
-                if msg is None:
-                    return
-                if isinstance(msg, CommandMessage):
-                    self.recv_cmd(msg)
-                else:
-                    raise errors.MessageError(msg, CommandMessage)
-
-            except errors.TransportError as exc:
+                self.recv_cmd()
+            except (ConnectionError, errors.TransportError) as exc:
                 logger = log.exception if log.isEnabledFor(logs.DEBUG) else log.error
                 logger('transport error (%s): %s', self.remote_url, utils.format.format_exc(exc))
+                break
 
             except Exception as exc:
                 self.send_err(exc)
@@ -177,8 +170,14 @@ class Protocol:
 
         self._con.send(data)
 
-    def recv_cmd(self, msg: CommandMessage) -> None:
+    def recv_cmd(self) -> None:
         """Decode a command message and execute the requested method."""
+        msg = self.recv_msg()
+        if msg is None:
+            return
+        if not isinstance(msg, CommandMessage):
+            raise errors.MessageError(msg, CommandMessage)
+
         svc = self._ifc.service(msg.service_name)
         func = getattr(svc, msg.command_name)
 
