@@ -28,7 +28,6 @@ class FileService(Service):
     def __init__(
         self, root_path: str | None = None, safe_root: bool = True, chunk_size: int = CHUNK_SIZE
     ) -> None:
-        """Configure the working root, safety, and buffering settings."""
         self.root_path = root_path or os.getcwd()
         self.safe_root = safe_root
         self.chunk_size = chunk_size
@@ -163,12 +162,11 @@ class FileService(Service):
         if not root_path:
             raise ValueError('safe_root is enabled, but no root_path is set')
 
-        if '..' in path:
+        full_path = os.path.join(root_path, path)
+        full_path_real = os.path.realpath(full_path)
+        root_path_real = os.path.realpath(root_path)
+
+        if os.path.commonpath([root_path_real, full_path_real]) != root_path_real:
             raise OSError(f"Permission denied: '{path}'")
 
-        abs_path = os.path.join(root_path, path)
-
-        if not abs_path.startswith(root_path):
-            raise OSError(f"Permission denied: '{path}'")
-
-        return abs_path
+        return full_path_real
