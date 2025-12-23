@@ -1,7 +1,6 @@
 import socket
 import subprocess
 import sys
-import threading
 
 import pytest
 
@@ -54,13 +53,6 @@ class Session:
     def stop_server(self):
         if self.proc:
             self.proc.terminate()
-
-
-def start_thread(func, *args, **kwargs):
-    t = threading.Thread(target=func, args=args, kwargs=kwargs)
-    t.daemon = True
-    t.start()
-    return t
 
 
 @pytest.fixture(scope='session', autouse=True)

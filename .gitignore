@@ -5,6 +5,7 @@ __pycache__/
 .*_cache/
 .jj/
 *.pyc
+.coverage
 .python-version
 .mise.toml
 review.txt
