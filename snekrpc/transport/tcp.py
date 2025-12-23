@@ -127,8 +127,7 @@ class TcpTransport(Transport):
         if self._ssl_cert:
             ctx = ssl.create_default_context()
             ctx.load_verify_locations(self._ssl_cert)
-            hostname = socket.gethostbyaddr(self._addr[0])[0]
-            sock = ctx.wrap_socket(sock, server_hostname=hostname)
+            sock = ctx.wrap_socket(sock, server_hostname=self._addr[0])
 
         return self.Connection(client, sock, self._url.netloc, self.chunk_size)
 
