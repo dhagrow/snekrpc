@@ -80,12 +80,12 @@ class Protocol:
         self.metadata: MutableMapping[str, Any] = metadata or {}
 
     @property
-    def local_url(self):
+    def local_url(self) -> str:
         """Return the local URL used by this endpoint."""
         return self._ifc.url
 
     @property
-    def remote_url(self):
+    def remote_url(self) -> str:
         """Return the remote URL for the peer connection."""
         return self._con.url
 
@@ -95,7 +95,7 @@ class Protocol:
             try:
                 self.recv_cmd()
             except (ConnectionError, errors.TransportError) as exc:
-                logger = log.exception if log.isEnabledFor(logs.DEBUG) else log.error
+                logger = logs.error_logger(log)
                 logger('transport error (%s): %s', self.remote_url, utils.format.format_exc(exc))
                 break
 
@@ -107,7 +107,7 @@ class Protocol:
         if self._ifc.codec:
             return
 
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug('handshake -> %s', self._con._addr)
         self._con.send(HANDSHAKE)
 
@@ -119,7 +119,7 @@ class Protocol:
         if op != HANDSHAKE:
             raise errors.HandshakeError()
 
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug('handshake(codec=%s) <- %s', codec, self._con._addr)
 
         self._ifc.codec = codec
@@ -130,14 +130,14 @@ class Protocol:
         if data != HANDSHAKE:
             return data
 
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug('handshake <- %s', self._con._addr)
 
-        codec = '' if self._ifc.codec is None else self._ifc.codec._name_
+        codec = '' if self._ifc.codec is None else self._ifc.codec.NAME
         data = HANDSHAKE + codec.encode()
 
         self._con.send(data)
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug('handshake(codec=%s) -> %s', codec, self._con._addr)
 
         return self._con.recv()
@@ -152,7 +152,7 @@ class Protocol:
             raise errors.TransportError('codec is not set')
         msg = cast(Message, msgspec.convert(codec._decode(data), Message.subtypes()))
 
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug('msg: %s <- %s', msg, self._con._addr)
 
         return msg
@@ -161,7 +161,7 @@ class Protocol:
         """Encode and send a message (performing the handshake as needed)."""
         self.req_handshake()
 
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug('msg: %s -> %s', message, self._con._addr)
 
         if (codec := self._ifc.codec) is None:
@@ -200,7 +200,7 @@ class Protocol:
         args = recv_args
         kwargs = recv_kwargs
 
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug(
                 'cmd: %s <- %s',
                 utils.format.format_cmd(msg.service_name, msg.command_name, args, kwargs),
@@ -216,7 +216,7 @@ class Protocol:
 
     def send_cmd(self, svc_name: str, cmd_name: str, *args: Any, **kwargs: Any) -> Any:
         """Send a command to the remote endpoint and return the response."""
-        if log.isEnabledFor(logs.DEBUG):
+        if logs.is_debug(log):
             log.debug(
                 'cmd: %s -> %s',
                 utils.format.format_cmd(svc_name, cmd_name, args, kwargs),
@@ -270,7 +270,7 @@ class Protocol:
             case _:
                 raise errors.MessageError(msg)
 
-    def recv_stream(self, started: bool = False):
+    def recv_stream(self, started: bool = False) -> Iterable[Any]:
         """Iterate over stream responses, handling protocol errors."""
         if not started:
             msg = self.recv_msg()

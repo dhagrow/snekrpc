@@ -37,9 +37,9 @@ class MetadataService(Service):
     @command()
     def services(self) -> list[ServiceSpec]:
         """Return metadata for every service."""
-        return [encode(svc) for svc in self._server.services()]
+        return [encode(name, svc) for name, svc in self._server.services()]
 
     @command()
     def service(self, name: str) -> ServiceSpec:
         """Return metadata for an individual service."""
-        return encode(self._server.service(name))
+        return encode(name, self._server.service(name))

@@ -2,31 +2,38 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import abc
 from typing import Any
 
-from .. import errors, registry, utils
+from .. import errors, utils
+from ..registry import Registry
 
-CodecMeta = registry.create_metaclass(__name__)
 
-
-def create(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Codec:
-    """Return an instance of the Codec matching *name*."""
+def create(name: str | Codec, **kwargs: Any) -> Codec:
+    """Return a codec by name or pass through existing instances."""
     if isinstance(name, Codec):
         return name
-    cls = CodecMeta.get(name)
-    return cls(**(codec_args or {}))
+    try:
+        cls = REGISTRY[name]
+    except KeyError:
+        cls = utils.path.import_class(Codec, f'snekrpc.codec.{name}')
+    return cls(**kwargs)
 
 
-class Codec(metaclass=CodecMeta):
+class Codec(abc.ABC):
     """Base class for codecs that know how to encode/decode RPC payloads."""
 
     NAME: str
 
+    def __init_subclass__(cls) -> None:
+        REGISTRY[cls.NAME] = cls
+
+    @abc.abstractmethod
     def encode(self, msg: Any) -> bytes:
         """Serialize `msg` into bytes."""
         raise NotImplementedError('abstract')
 
+    @abc.abstractmethod
     def decode(self, data: bytes) -> Any:
         """Deserialize bytes into Python objects."""
         raise NotImplementedError('abstract')
@@ -44,3 +51,6 @@ class Codec(metaclass=CodecMeta):
             return self.decode(data)
         except Exception as exc:
             raise errors.DecodeError(f'{exc}: data={utils.format.elide(repr(data))!r}') from exc
+
+
+REGISTRY = Registry(__name__, Codec)

@@ -6,9 +6,18 @@ import sys
 from logging import DEBUG, INFO, Formatter, StreamHandler, getLogger
 from logging import Logger as Logger
 from types import TracebackType
+from typing import Callable
 
 get = getLogger
 log = get(__name__)
+
+
+def is_debug(log: Logger) -> bool:
+    return log.isEnabledFor(DEBUG)
+
+
+def error_logger(logger: Logger) -> Callable[..., None]:
+    return logger.exception if is_debug(logger) else logger.error
 
 
 def init(debug_level: int = 0, log_exceptions: bool = True) -> None:

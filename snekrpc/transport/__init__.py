@@ -2,33 +2,39 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import abc
+from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
-from .. import logs, registry, utils
+from .. import logs, utils
+from ..registry import Registry
 
 if TYPE_CHECKING:
     from ..interface import Interface
 
-TransportMeta = registry.create_registry(__name__)
-
 log = logs.get(__name__)
 
 
-def create(url: str | utils.url.Url | 'Transport', transport_args: Mapping[str, Any] | None = None):
+def create(url: str | utils.url.Url | Transport, **kwargs: Any) -> Transport:
     """Return a `Transport` instance for *url*."""
     if isinstance(url, Transport):
         return url
 
-    scheme = utils.url.Url(url).scheme
-    cls = TransportMeta.get(scheme)
-    return cls(url, **(transport_args or {}))
+    name = utils.url.Url(url).scheme
+    try:
+        cls = REGISTRY[name]
+    except KeyError:
+        cls = utils.path.import_class(Transport, name)
+    return cls(url, **kwargs)
 
 
-class Transport(metaclass=TransportMeta):
+class Transport(abc.ABC):
     """Base transport class mirrored across clients and servers."""
 
     NAME: str
+
+    def __init_subclass__(cls) -> None:
+        REGISTRY[cls.NAME] = cls
 
     def __init__(self, url: str | utils.url.Url):
         """Store the normalized URL for later use."""
@@ -39,18 +45,22 @@ class Transport(metaclass=TransportMeta):
         """Return the configured transport URL."""
         return self._url
 
+    @abc.abstractmethod
     def connect(self, client: Any) -> Connection:
         """Connect to a remote endpoint and return a Connection."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def serve(self, server: Any) -> None:
         """Start serving RPC requests."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def stop(self) -> None:
         """Stop serving and release resources."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def join(self, timeout: float | None = None) -> None:
         """Block until the server threads exit."""
         raise NotImplementedError
@@ -88,3 +98,6 @@ class Connection:
     def __exit__(self, exc_type: type[Exception], exc: Exception, tb: TracebackType) -> None:
         """Close the connection when leaving a `with` block."""
         self.close()
+
+
+REGISTRY = Registry(__name__, Transport)

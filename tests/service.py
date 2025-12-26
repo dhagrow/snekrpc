@@ -6,7 +6,7 @@ import snekrpc
 
 
 class TestService(snekrpc.Service):
-    _name_ = 'test'
+    NAME = 'test'
 
     @snekrpc.command()
     def null(self):

@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 from threading import Event, Lock
-from typing import Any, ClassVar
+from typing import Any, Generic, TypeVar
 
-from . import errors, logs
-from .utils.path import import_package
+from . import logs
+from .utils.path import import_class, import_package
 
 log = logs.get(__name__)
 
-_metaclasses: dict[str, type['RegistryMeta']] = {}
 _init_lock = Lock()
 _initialized = Event()
+_registries: dict[str, Registry[Any]] = {}
 
 
 def init() -> None:
@@ -21,55 +21,38 @@ def init() -> None:
         if _initialized.is_set():
             return
 
-        for meta_name, meta in _metaclasses.items():
+        for meta_name, meta in _registries.items():
             meta.init(meta_name)
 
         _initialized.set()
 
 
-class RegistryMeta(type):
-    """Metaclass that keeps a registry of subclasses by name."""
+T = TypeVar('T')
 
-    registry: ClassVar[dict[str, type[Any] | Exception]] = {}
 
-    def __init__(cls, name: str, bases: tuple[type, ...], namespace: dict[str, Any]) -> None:
-        """Register each subclass under `_name_` (or the class name)."""
-        super().__init__(name, bases, namespace)
-        if bases and bases[0] is not object:
-            cls._name_ = reg_name = namespace.get('_name_', name)  # type: ignore[attr-defined]
-            if reg_name in cls.registry:
-                raise errors.RegistryError(f'already registered: {reg_name}')
-            cls.registry[reg_name] = cls
-            log.debug('registered %s: %s', f'{cls.__module__}.{name}', reg_name)
+class Registry(Generic[T]):
+    """Keeps a registry of subclasses by name."""
 
-    @classmethod
-    def get(cls, name: str) -> type[Any]:
-        """Block until registries are initialized and return a registered class."""
-        _initialized.wait()
-        entry = cls.registry[name]
-        if isinstance(entry, Exception):
-            raise entry
-        return entry
+    def __init__(self, name: str, base_type: type[T]) -> None:
+        self._base_type = base_type
+        self._registry: dict[str, type[T]] = {}
 
-    @classmethod
-    def names(cls) -> tuple[str, ...]:
+        _registries[name] = self
+
+    def __getitem__(self, name: str) -> type[T]:
+        try:
+            cls = self._registry[name]
+        except KeyError:
+            cls = import_class(self._base_type, name)
+        return cls
+
+    def __setitem__(self, name: str, cls: type[T]) -> None:
+        self._registry[name] = cls
+
+    def names(self) -> tuple[str, ...]:
         """Return all registered names in insertion order."""
-        _initialized.wait()
-        return tuple(cls.registry.keys())
+        return tuple(self._registry.keys())
 
-    @classmethod
-    def init(cls, name: str) -> None:
+    def init(self, name: str) -> None:
         """Eagerly import `name` to populate the registry with entry points."""
-        exceptions = import_package(name)
-        for modname, exc in exceptions.items():
-            cls.registry[modname] = exc
-
-
-def create_metaclass(meta_name: str) -> type[RegistryMeta]:
-    """Create and register a distinct RegistryMeta subclass for `meta_name`."""
-
-    class Meta(RegistryMeta):
-        registry: ClassVar[dict[str, type[Any] | Exception]] = {}
-
-    _metaclasses[meta_name] = Meta
-    return Meta
+        import_package(name)

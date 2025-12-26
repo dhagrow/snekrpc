@@ -55,8 +55,7 @@ def import_package(pkgname: str) -> None:
         try:
             import_module(modname, pkgname)
         except Exception as e:
-            logger = log.exception if log.isEnabledFor(logs.DEBUG) else log.error  # type: ignore[attr-defined]
-            logger('import error: %s - %s', modname, e)
+            logs.error_logger(log)('import error: %s - %s', modname, e)
 
 
 def import_module(modname: str, pkgname: str | None = None) -> None:

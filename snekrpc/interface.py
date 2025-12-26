@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from . import errors, logs, protocol, registry, utils
 from .codec import Codec
-from .codec import create as get_codec
+from .codec import create as create_codec
 from .service import ServiceProxy
-from .service import create as get_service
+from .service import create as create_service
 from .transport import Connection, Transport
-from .transport import create as get_transport
+from .transport import create as create_transport
 
 if TYPE_CHECKING:
     from .service import Service
@@ -28,13 +28,13 @@ class Interface:
     ) -> None:
         registry.init()
 
-        self.transport = get_transport(transport or utils.DEFAULT_URL)
+        self.transport = create_transport(transport or utils.DEFAULT_URL)
         self.codec = codec
         self.version = version
 
     @property
-    def url(self) -> utils.url.Url:
-        return self.transport.url
+    def url(self) -> str:
+        return str(self.transport.url)
 
     @property
     def codec(self) -> Codec | None:
@@ -42,8 +42,7 @@ class Interface:
 
     @codec.setter
     def codec(self, codec: str | Codec | None) -> None:
-        self._codec = codec if codec is None else get_codec(codec)
-        log.debug('codec: %s', self._codec and self._codec._name_)
+        self._codec = codec if codec is None else create_codec(codec)
         log.debug('codec: %s', self._codec and self._codec.NAME)
 
 
@@ -94,7 +93,7 @@ class Client(Interface):
 
     def service_names(self) -> list[str]:
         meta = self.service('_meta')
-        return meta.service_names()
+        return cast(list[str], meta.service_names())
 
 
 class Server(Interface):
@@ -131,7 +130,7 @@ class Server(Interface):
         service_args: Mapping[str, Any] | None = None,
         alias: str | None = None,
     ) -> Server:
-        svc = get_service(service, **(service_args or {}))
+        svc = create_service(service, **(service_args or {}))
         name = svc.NAME if alias is None else alias
         self._services[name] = svc
         log.debug('service added: %s', name)
@@ -144,8 +143,8 @@ class Server(Interface):
     def service(self, name: str) -> Service:
         return self._services[name]
 
-    def services(self) -> list[Service]:
-        return [self.service(name) for name in self.service_names()]
+    def services(self) -> list[tuple[str, Service]]:
+        return [(name, self.service(name)) for name in self.service_names()]
 
     def service_names(self) -> list[str]:
         return [name for name in self._services if name and not name.startswith('_')]

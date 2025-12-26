@@ -4,19 +4,18 @@ from __future__ import annotations
 
 import inspect
 import itertools
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from typing import TYPE_CHECKING, Any
 
 import msgspec
 
-from .. import errors, logs, protocol, registry, utils
+from .. import errors, logs, protocol, utils
+from ..registry import Registry
 
 if TYPE_CHECKING:
     from ..interface import Client
 
 log = logs.get(__name__)
-
-ServiceMeta = registry.create_registry(__name__)
 
 
 class ServiceSpec(msgspec.Struct, frozen=True):
@@ -36,30 +35,23 @@ def parse_alias(name: str) -> tuple[str, str | None]:
     return base, alias
 
 
-def get(name: str):
-    """Return the registered Service subclass for ``name``."""
-    return ServiceMeta.get(name)
-
-
-def create(
-    name: str | Service, service_args: Mapping[str, Any] | None = None, alias: str | None = None
-):
-    """Instantiate (or normalize) a service definition."""
+def create(name: str | Service, **kwargs: dict[str, Any]) -> Service:
+    """Return a service by name or pass through existing instances."""
     if isinstance(name, Service):
-        obj = name
-    elif inspect.isclass(name) and issubclass(name, Service):
-        obj = name(**(service_args or {}))
-    else:
-        cls = get(name)
-        obj = cls(**(service_args or {}))
-
-    if alias:
-        obj._name_ = alias
-
-    return obj
+        return name
+    try:
+        cls = REGISTRY[name]
+    except KeyError:
+        cls = utils.path.import_class(Service, name)
+    return cls(**kwargs)
 
 
-def encode(svc: Service) -> ServiceSpec:
+def get(name: str) -> type[Service]:
+    """Return the registered Service subclass for ``name``."""
+    return REGISTRY[name]
+
+
+def encode(service_name: str, svc: Service) -> ServiceSpec:
     """Serialize a service definition for metadata responses."""
     # commands have a `_meta` attribute
     commands = []
@@ -70,13 +62,16 @@ def encode(svc: Service) -> ServiceSpec:
         if getattr(attr, '_meta', None) is not None:
             commands.append(utils.function.encode(attr))
 
-    return ServiceSpec(svc.NAME, svc.__doc__, tuple(commands))
+    return ServiceSpec(service_name, svc.__doc__, tuple(commands))
 
 
-class Service(metaclass=ServiceMeta):
+class Service:
     """Base class for RPC services."""
 
     NAME: str
+
+    def __init_subclass__(cls) -> None:
+        REGISTRY[cls.NAME] = cls
 
 
 class ServiceProxy:
@@ -196,3 +191,6 @@ class StreamInitiator:
     def __iter__(self) -> Iterator[Any]:
         """Yield the cached first item followed by the original stream."""
         yield from self._gen
+
+
+REGISTRY = Registry(__name__, Service)

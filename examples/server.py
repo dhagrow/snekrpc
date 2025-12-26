@@ -9,6 +9,8 @@ from snekrpc import logs
 class Service(snekrpc.Service):
     """Example service"""
 
+    NAME = 'example'
+
     @snekrpc.command()
     @snekrpc.param('value', 'The value to echo back')
     def echo(self, value: Any) -> Any:
@@ -51,7 +53,7 @@ def main() -> None:
 
     s = snekrpc.Server(args.u, codec=args.c)
     s.add_service(Service(), alias='ex')
-    s.add_service('meta')
+    s.add_service('meta', {'server': s})
     s.serve()
 
 

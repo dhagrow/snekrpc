@@ -36,7 +36,7 @@ class Retry:
         self.interval = RETRY_INTERVAL if interval is None else interval
         self.errors = tuple(errors or RETRY_ERRORS)
 
-        self.log = logger.exception if logger.isEnabledFor(logs.DEBUG) else log.warning  # type: ignore[attr-defined]
+        self.log = logs.error_logger(logger)
         self.log_template = log_template or RETRY_LOG_TEMPLATE
 
     def call(self, func: Callable[..., T_Result], *args: Any, **kwargs: Any) -> T_Result:

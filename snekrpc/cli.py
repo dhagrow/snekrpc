@@ -64,12 +64,15 @@ class Parser:
             utils.path.import_module(imp)
 
         if args.list:
-            meta = {
-                'codecs': codec.REGISTRY,
-                'formatters': formatter.FormatterMeta,
-                'services': service.ServiceMeta,
-                'transports': transport.TransportMeta,
-            }[args.list]
+            meta = cast(
+                registry.Registry[Any],
+                {
+                    'codecs': codec.REGISTRY,
+                    'formatters': formatter.REGISTRY,
+                    'services': service.REGISTRY,
+                    'transports': transport.REGISTRY,
+                }[args.list],
+            )
 
             # select an output formatter
             fmt = None
@@ -87,31 +90,31 @@ class Parser:
         # parser for transport and service args
         parser = argparse.ArgumentParser(parents=[self.base_parser])
 
-        cls = transport.create(args.url)
-        if isinstance(cls, Exception):
-            self.add_transport_exception(parser, args.url.scheme, cls)
+        transport_cls = transport.create(args.url)
+        if isinstance(transport_cls, Exception):
+            self.add_transport_exception(parser, args.url.scheme, transport_cls)
         else:
-            self.add_transport_args(parser, cls)
+            self.add_transport_args(parser, transport_cls)
 
         # add service arguments
         used_aliases = set()
         for name in sorted(args.services):
             name, alias = service.parse_alias(name)
-            cls = service.get(name)
+            service_cls = service.get(name)
 
-            alias = alias or cls._name_
+            alias = alias or service_cls.NAME
             if alias in used_aliases:
                 raise ValueError(f'duplicate service alias: {alias}')
             used_aliases.add(alias)
 
-            self.add_service_args(parser, cls, alias)
+            self.add_service_args(parser, service_cls, alias)
 
         # collect transport and service args
         sub_args = parser.parse_args(extra_args)
         trn_args, svc_args = self.get_prefixed_args(sub_args)
 
         trn_name = args.url.scheme
-        trn = transport.create(args.url, trn_args.get(trn_name))
+        trn = transport.create(args.url, **trn_args.get(trn_name, {}))
 
         # start client or server
         if args.server_mode:
@@ -319,7 +322,7 @@ class Parser:
         """Expose transport constructor parameters with a unique prefix."""
         ignored = {'url', 'timeout'}
         trn_parser = parser.add_argument_group(
-            '{} transport arguments'.format(cls._name_),
+            '{} transport arguments'.format(cls.NAME),
             'To see arguments for another transport, set the "--url" argument',
         )
 
@@ -330,7 +333,7 @@ class Parser:
             params.append(
                 msgspec.structs.replace(
                     param,
-                    name='_'.join(['transport', cls._name_, param.name]),
+                    name='_'.join(['transport', cls.NAME, param.name]),
                     # force keyword-only params for clarity
                     kind=param.kind if param.kind == Param.VAR_KEYWORD else Param.KEYWORD_ONLY,
                     hide=param.name in ignored,
@@ -706,15 +709,3 @@ def io_stat_mode() -> str:
         return 'redirected'
     else:
         return 'terminal'
-
-
-# fix for open issue: https://bugs.python.org/issue14156
-class FileType(argparse.FileType):
-    """Version of argparse.FileType that unwraps stdin buffers reliably."""
-
-    def __call__(self, string: str):
-        """Return a binary buffer when reading stdin."""
-        fp = super().__call__(string)
-        if string == '-' and 'r' in self._mode:
-            fp = getattr(fp, 'buffer', fp)
-        return fp

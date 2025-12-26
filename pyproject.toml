@@ -27,7 +27,7 @@ script = "snekrpc"
 [tool.mypy]
 strict = true
 packages = ["snekrpc"]
-disable_error_code = ["metaclass"]
+disable_error_code = ["metaclass", "type-abstract"]
 
 [tool.ruff]
 line-length = 100
