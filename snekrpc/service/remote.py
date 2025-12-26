@@ -14,7 +14,7 @@ log = logs.get(__name__)
 class RemoteService(Service, ServiceProxy):
     """Expose another RPC service through the current server."""
 
-    _name_ = 'remote'
+    NAME = 'remote'
 
     def __init__(
         self,

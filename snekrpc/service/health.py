@@ -12,7 +12,7 @@ from .. import Service, command
 class HealthService(Service):
     """Expose heartbeat/ping commands for monitoring."""
 
-    _name_ = 'health'
+    NAME = 'health'
 
     @command()
     def ping(self, count: int = 1, interval: float = 1.0) -> Iterator[None]:

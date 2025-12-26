@@ -10,7 +10,7 @@ from inspect import (
     signature,
 )
 from inspect import _ParameterKind as ParameterKind
-from typing import Any, Callable, ParamSpec, TypeVar
+from typing import Any, Callable, ParamSpec, TypeVar, cast
 
 import msgspec
 from makefun import create_function
@@ -155,4 +155,4 @@ def decode(spec: SignatureSpec, func: Callable[..., Any]) -> Callable[..., Any]:
         spec.return_annotation if spec.return_annotation is not None else Signature.empty
     )
     sig = Signature(parameters=params, return_annotation=return_annotation)
-    return create_function(sig, func, func_name=spec.name)
+    return cast(Callable[..., Any], create_function(sig, func, func_name=spec.name))

@@ -11,7 +11,7 @@ from . import Formatter
 class PrettyFormatter(Formatter):
     """Formatter that shows structured output in a friendly way."""
 
-    _name_ = 'pretty'
+    NAME = 'pretty'
 
     def print(self, res: Any) -> None:
         """Print formatted text when not None."""

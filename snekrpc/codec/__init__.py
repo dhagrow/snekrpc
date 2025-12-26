@@ -21,7 +21,7 @@ def create(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Co
 class Codec(metaclass=CodecMeta):
     """Base class for codecs that know how to encode/decode RPC payloads."""
 
-    _name_: str
+    NAME: str
 
     def encode(self, msg: Any) -> bytes:
         """Serialize `msg` into bytes."""

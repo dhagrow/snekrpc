@@ -2,7 +2,7 @@ import snekrpc
 from snekrpc import logs
 
 
-def main():
+def main() -> None:
     logs.init()
 
     c = snekrpc.Client('tcp://localhost:1234')

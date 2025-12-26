@@ -12,7 +12,7 @@ from . import Codec
 class JsonCodec(Codec):
     """Codec that serializes RPC payloads using JSON."""
 
-    _name_ = 'json'
+    NAME = 'json'
 
     def encode(self, msg: Any) -> bytes:
         """Encode Python objects to JSON bytes."""

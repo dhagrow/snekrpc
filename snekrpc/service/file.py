@@ -20,7 +20,7 @@ CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
 class FileService(Service):
     """Expose file operations such as listing, uploads, and downloads."""
 
-    _name_ = 'file'
+    NAME = 'file'
 
     @param('root_path', doc='root path for all file operations')
     @param('safe_root', doc='ensures that no file operation escapes the root path')
@@ -45,7 +45,7 @@ class FileService(Service):
         self._root_path = os.path.join(path, '')
 
     @command()
-    def paths(self, pattern: str | None = None, with_metadata: bool = False):
+    def paths(self, pattern: str | None = None, with_metadata: bool = False) -> Iterable[str]:
         """Yield file paths (optionally including metadata) matching pattern."""
         pattern = self.check_path(pattern or '*')
         if os.path.isdir(pattern):
@@ -53,20 +53,21 @@ class FileService(Service):
 
         for name in glob.iglob(pattern):
             if isinstance(name, bytes):
-                name = name.decode('utf8')
+                name = name.decode()
 
             path = os.path.relpath(name, self.root_path) if self.safe_root else name
             if path == '.':
                 continue
 
-            if not with_metadata:
-                yield path
-                continue
+            yield path
 
+    @command()
+    def path_info(self, pattern: str | None = None) -> Iterable[dict[str, Any]]:
+        for path in self.paths(pattern):
             entry: dict[str, Any] = {'path': path}
             try:
-                stat = os.stat(name)
-                entry.update(size=stat.st_size, mtime=stat.st_mtime, isfile=os.path.isfile(name))
+                stat = os.stat(path)
+                entry.update(size=stat.st_size, mtime=stat.st_mtime, isfile=os.path.isfile(path))
             except OSError as exc:
                 log.warning('could not read file: %s', exc)
                 entry.update(size=None, mtime=None, isfile=None)

@@ -86,7 +86,7 @@ class TcpConnection(Connection):
 class TcpTransport(Transport):
     """Expose the transport API over TCP."""
 
-    _name_ = 'tcp'
+    NAME = 'tcp'
     log = log
     Connection = TcpConnection
 

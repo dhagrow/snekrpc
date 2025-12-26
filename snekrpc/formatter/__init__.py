@@ -29,7 +29,7 @@ def load(name: str):
 class Formatter(metaclass=FormatterMeta):
     """Base class for converting RPC responses to user output."""
 
-    _name_: str | None = None
+    NAME: str
 
     def process(self, res: Any) -> None:
         """Automatically iterate through generators and print results."""

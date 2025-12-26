@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 import socketserver
 from http import client, server
 from typing import Any
@@ -53,7 +54,7 @@ class HTTPHandler(server.BaseHTTPRequestHandler):
 class HTTPTransport(Transport):
     """Transport that speaks the RPC protocol over HTTP."""
 
-    _name_ = 'http'
+    NAME = 'http'
     Handler = HTTPHandler
 
     @param('headers')
@@ -120,7 +121,11 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, server.HTTPServer):
         self._version = version
         self._interface = interface
 
-    def handle_error(self, request, client_address) -> None:
+    def handle_error(
+        self,
+        request: socket.SocketType | tuple[bytes, socket.SocketType],
+        client_address: tuple[str, int],
+    ) -> None:
         """Log handler errors via the shared logger."""
         log.exception('request error (%s)', utils.url.format_addr(client_address))
 

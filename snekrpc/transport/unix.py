@@ -22,7 +22,7 @@ class UnixConnection(tcp.TcpConnection):
 class UnixTransport(tcp.TcpTransport):
     """Transport that communicates over Unix domain sockets."""
 
-    _name_ = 'unix'
+    NAME = 'unix'
     log = log
     Connection: type[tcp.TcpConnection] = UnixConnection
 

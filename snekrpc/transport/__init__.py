@@ -10,7 +10,7 @@ from .. import logs, registry, utils
 if TYPE_CHECKING:
     from ..interface import Interface
 
-TransportMeta = registry.create_metaclass(__name__)
+TransportMeta = registry.create_registry(__name__)
 
 log = logs.get(__name__)
 
@@ -28,7 +28,7 @@ def create(url: str | utils.url.Url | 'Transport', transport_args: Mapping[str, 
 class Transport(metaclass=TransportMeta):
     """Base transport class mirrored across clients and servers."""
 
-    _name_: str | None = None
+    NAME: str
 
     def __init__(self, url: str | utils.url.Url):
         """Store the normalized URL for later use."""
@@ -85,6 +85,6 @@ class Connection:
         """Allow context-manager usage."""
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: type[Exception], exc: Exception, tb: TracebackType) -> None:
         """Close the connection when leaving a `with` block."""
         self.close()

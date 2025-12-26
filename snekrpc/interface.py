@@ -44,6 +44,7 @@ class Interface:
     def codec(self, codec: str | Codec | None) -> None:
         self._codec = codec if codec is None else get_codec(codec)
         log.debug('codec: %s', self._codec and self._codec._name_)
+        log.debug('codec: %s', self._codec and self._codec.NAME)
 
 
 class Client(Interface):
@@ -129,18 +130,14 @@ class Server(Interface):
         service: str | Service,
         service_args: Mapping[str, Any] | None = None,
         alias: str | None = None,
-    ) -> 'Server':
-        if service == 'meta':
-            service_args = {'server': self}
-
-        svc = get_service(service, service_args, alias)
-        if not svc._name_:
-            raise ValueError('service must define a name')
-        self._services[svc._name_] = svc
-        log.debug('service added: %s', svc._name_)
+    ) -> Server:
+        svc = get_service(service, **(service_args or {}))
+        name = svc.NAME if alias is None else alias
+        self._services[name] = svc
+        log.debug('service added: %s', name)
         return self
 
-    def remove_service(self, name: str) -> 'Server':
+    def remove_service(self, name: str) -> Server:
         del self._services[name]
         return self
 

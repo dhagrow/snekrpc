@@ -65,7 +65,7 @@ class Parser:
 
         if args.list:
             meta = {
-                'codecs': codec.CodecMeta,
+                'codecs': codec.REGISTRY,
                 'formatters': formatter.FormatterMeta,
                 'services': service.ServiceMeta,
                 'transports': transport.TransportMeta,
@@ -354,7 +354,7 @@ class Parser:
         """Translate command metadata into argparse arguments."""
 
         def is_option_arg(param: ParameterSpec) -> bool:
-            return kind == Param.VAR_KEYWORD or param.has_default
+            return param.kind == Param.VAR_KEYWORD or param.has_default
 
         if single_flags:
             # keep track of used single char flags

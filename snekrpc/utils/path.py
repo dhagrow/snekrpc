@@ -8,7 +8,7 @@ import io
 import os
 import pkgutil
 from collections.abc import Generator
-from typing import BinaryIO
+from typing import BinaryIO, TypeVar, cast
 
 from .. import logs
 
@@ -46,28 +46,38 @@ def iter_file(fp: BinaryIO, chunk_size: int | None = None) -> Generator[bytes, N
         yield chunk
 
 
-def import_package(pkgname: str) -> dict[str, Exception]:
-    """Import all modules in *pkgname* and return any exceptions that occur."""
-    exceptions: dict[str, Exception] = {}
+def import_package(pkgname: str) -> None:
+    """Import all modules in *pkgname*."""
     path = base_path(pkgname.replace('.', '/'))
     for _, modname, ispkg in pkgutil.iter_modules([path]):
         if ispkg:
             continue
-        exc = import_module(modname, pkgname)
-        if exc:
-            exceptions[modname] = exc
-    return exceptions
+        try:
+            import_module(modname, pkgname)
+        except Exception as e:
+            logger = log.exception if log.isEnabledFor(logs.DEBUG) else log.error  # type: ignore[attr-defined]
+            logger('import error: %s - %s', modname, e)
 
 
-def import_module(modname: str, pkgname: str | None = None) -> Exception | None:
+def import_module(modname: str, pkgname: str | None = None) -> None:
     """Import a module, optionally relative to *pkgname*."""
     name = '.'.join(filter(None, [pkgname, modname]))
-    try:
-        log.debug('loading: %s', name)
-        if pkgname:
-            importlib.import_module(f'.{modname}', pkgname)
-        else:
-            importlib.import_module(modname)
-    except Exception as exc:
-        return exc
-    return None
+    log.debug('loading: %s', name)
+    if pkgname:
+        importlib.import_module(f'.{modname}', pkgname)
+    else:
+        importlib.import_module(modname)
+
+
+T = TypeVar('T')
+
+
+def import_class(BaseType: type[T], name: str) -> type[T]:
+    mod_name, cls_name = name.rsplit('.', 1)
+    mod = importlib.import_module(mod_name)
+    cls = getattr(mod, cls_name)
+
+    if not isinstance(cls, BaseType):
+        raise TypeError(f'expected a class of type {BaseType}, got {cls}')
+
+    return cast(type[T], cls)

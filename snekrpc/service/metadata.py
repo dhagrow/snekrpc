@@ -12,7 +12,7 @@ from . import ServiceSpec, encode
 class MetadataService(Service):
     """Expose codec/version info and service definitions."""
 
-    _name_ = 'meta'
+    NAME = 'meta'
 
     @param('server', hide=True)
     def __init__(self, server: Server) -> None:
@@ -24,8 +24,8 @@ class MetadataService(Service):
         """Return codec, transport, and version information."""
         ifc = self._server
         return {
-            'codec': None if ifc.codec is None else ifc.codec._name_,
-            'transport': ifc.transport._name_,
+            'codec': None if ifc.codec is None else ifc.codec.NAME,
+            'transport': ifc.transport.NAME,
             'version': ifc.version,
         }
 

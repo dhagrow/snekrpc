@@ -40,7 +40,7 @@ class Service(snekrpc.Service):
             pass
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', default='tcp://localhost:1234')
     parser.add_argument('-c', default='msgpack')

@@ -25,6 +25,8 @@ name = "snekrpc"
 script = "snekrpc"
 
 [tool.mypy]
+strict = true
+packages = ["snekrpc"]
 disable_error_code = ["metaclass"]
 
 [tool.ruff]

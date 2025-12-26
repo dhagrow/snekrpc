@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 log = logs.get(__name__)
 
-ServiceMeta = registry.create_metaclass(__name__)
+ServiceMeta = registry.create_registry(__name__)
 
 
 class ServiceSpec(msgspec.Struct, frozen=True):
@@ -70,17 +70,13 @@ def encode(svc: Service) -> ServiceSpec:
         if getattr(attr, '_meta', None) is not None:
             commands.append(utils.function.encode(attr))
 
-    return ServiceSpec(
-        svc._name_ or svc.__class__.__name__,
-        svc.__doc__,
-        tuple(commands),
-    )
+    return ServiceSpec(svc.NAME, svc.__doc__, tuple(commands))
 
 
 class Service(metaclass=ServiceMeta):
     """Base class for RPC services."""
 
-    _name_: str | None = None
+    NAME: str
 
 
 class ServiceProxy:
@@ -106,7 +102,7 @@ class ServiceProxy:
             client.retry_count, client.retry_interval, errors=[errors.TransportError], logger=log
         )
 
-        def wrap_command(spec: utils.function.SignatureSpec):
+        def wrap_command(spec: utils.function.SignatureSpec) -> Callable[..., Any]:
             return wrap_call(self, spec.name, spec)
 
         if command_metadata is True:
@@ -132,10 +128,10 @@ class ServiceProxy:
 
 def wrap_call(
     proxy: ServiceProxy, cmd_name: str, cmd_spec: utils.function.SignatureSpec | None = None
-):
+) -> Callable[..., Any]:
     """Wrap a remote call in retry logic, handling stream outputs."""
 
-    def call(*args: Any, **kwargs: Any):
+    def call(*args: Any, **kwargs: Any) -> Any:
         con = proxy._client.connect()
         try:
             proto = protocol.Protocol(proxy._client, con, {proxy._svc_name: proxy._commands})
@@ -154,14 +150,14 @@ def wrap_call(
             proxy._client.close()
             raise
 
-    def call_value(*args: Any, **kwargs: Any):
+    def call_value(*args: Any, **kwargs: Any) -> Any:
         gen = call(*args, **kwargs)
         isgen = next(gen)
         if isgen:
             raise errors.ParameterError('unexpected stream result')
         return next(gen)
 
-    def call_stream(*args: Any, **kwargs: Any):
+    def call_stream(*args: Any, **kwargs: Any) -> Any:
         gen = call(*args, **kwargs)
         isgen = next(gen)
         if not isgen:
@@ -170,13 +166,13 @@ def wrap_call(
 
     if cmd_spec and cmd_spec.is_generator:
 
-        def retry_wrap_gen(*args: Any, **kwargs: Any):
+        def retry_wrap_gen(*args: Any, **kwargs: Any) -> Any:
             yield from proxy._retry.call_gen(call_stream, *args, **kwargs)
 
         callback = retry_wrap_gen
     else:
 
-        def retry_wrap(*args: Any, **kwargs: Any):
+        def retry_wrap(*args: Any, **kwargs: Any) -> Any:
             return proxy._retry.call(call_value, *args, **kwargs)
 
         callback = retry_wrap
