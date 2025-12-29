@@ -9,24 +9,11 @@ from .. import errors, utils
 from ..registry import Registry
 
 
-def create(name: str | Codec, **kwargs: Any) -> Codec:
-    """Return a codec by name or pass through existing instances."""
-    if isinstance(name, Codec):
-        return name
-    try:
-        cls = REGISTRY[name]
-    except KeyError:
-        cls = utils.path.import_class(Codec, f'snekrpc.codec.{name}')
-    return cls(**kwargs)
-
-
 class Codec(abc.ABC):
     """Base class for codecs that know how to encode/decode RPC payloads."""
 
-    NAME: str
-
-    def __init_subclass__(cls) -> None:
-        REGISTRY[cls.NAME] = cls
+    def __init_subclass__(cls, /, name: str) -> None:
+        REGISTRY.set(name, cls)
 
     @abc.abstractmethod
     def encode(self, msg: Any) -> bytes:
@@ -54,3 +41,4 @@ class Codec(abc.ABC):
 
 
 REGISTRY = Registry(__name__, Codec)
+get, create = REGISTRY.get, REGISTRY.create

@@ -8,10 +8,8 @@ from typing import Any
 from . import Formatter
 
 
-class PrettyFormatter(Formatter):
+class PrettyFormatter(Formatter, name='pretty'):
     """Formatter that shows structured output in a friendly way."""
-
-    NAME = 'pretty'
 
     def print(self, res: Any) -> None:
         """Print formatted text when not None."""

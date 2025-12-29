@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, cast
+from collections.abc import Sequence
+from typing import Any, cast
 
 from . import errors, logs, protocol, registry, utils
+from .codec import REGISTRY as CODEC_REGISTRY
 from .codec import Codec
 from .codec import create as create_codec
-from .service import ServiceProxy
+from .service import REGISTRY as SERVICE_REGISTRY
+from .service import Service, ServiceProxy
 from .service import create as create_service
+from .transport import REGISTRY as TRANSPORT_REGISTRY
 from .transport import Connection, Transport
 from .transport import create as create_transport
-
-if TYPE_CHECKING:
-    from .service import Service
 
 DEFAULT_CODEC = 'msgpack'
 
@@ -28,7 +28,11 @@ class Interface:
     ) -> None:
         registry.init()
 
-        self.transport = create_transport(transport or utils.DEFAULT_URL)
+        self.transport = (
+            transport
+            if isinstance(transport, Transport)
+            else create_transport(transport or utils.DEFAULT_URL)
+        )
         self.codec = codec
         self.version = version
 
@@ -37,13 +41,21 @@ class Interface:
         return str(self.transport.url)
 
     @property
+    def transport_name(self) -> str | None:
+        return None if self.transport is None else TRANSPORT_REGISTRY.get_name(type(self.transport))
+
+    @property
+    def codec_name(self) -> str:
+        return '' if self._codec is None else CODEC_REGISTRY.get_name(type(self._codec))
+
+    @property
     def codec(self) -> Codec | None:
         return self._codec
 
     @codec.setter
     def codec(self, codec: str | Codec | None) -> None:
-        self._codec = codec if codec is None else create_codec(codec)
-        log.debug('codec: %s', self._codec and self._codec.NAME)
+        self._codec = codec if codec is None or isinstance(codec, Codec) else create_codec(codec)
+        log.debug('codec: %s', self.codec_name)
 
 
 class Client(Interface):
@@ -106,7 +118,7 @@ class Server(Interface):
     ) -> None:
         super().__init__(transport, codec or DEFAULT_CODEC, version)
         self._services: dict[str, Service] = {}
-        self.add_service('meta', {'server': self}, '_meta')
+        self.add_service(create_service('meta', server=self), alias='_meta')
         self.remote_tracebacks = remote_tracebacks
 
     def serve(self) -> None:
@@ -124,15 +136,14 @@ class Server(Interface):
     def join(self, timeout: float | None = None) -> None:
         self.transport.join(timeout)
 
-    def add_service(
-        self,
-        service: str | Service,
-        service_args: Mapping[str, Any] | None = None,
-        alias: str | None = None,
-    ) -> Server:
-        svc = create_service(service, **(service_args or {}))
-        name = svc.NAME if alias is None else alias
-        self._services[name] = svc
+    def add_service(self, service: Service, alias: str | None = None) -> Server:
+        """Register a service with the server.
+
+        You can register a service but keep it hidden from users by prefixing
+        the name with an underscore.
+        """
+        name = alias or SERVICE_REGISTRY.get_name(type(service))
+        self._services[name] = service
         log.debug('service added: %s', name)
         return self
 

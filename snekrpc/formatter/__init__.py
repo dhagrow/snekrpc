@@ -5,28 +5,14 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
-from .. import utils
 from ..registry import Registry
-
-
-def create(name: str | Formatter, **kwargs: Any) -> Formatter:
-    """Return a formatter by name or pass through existing instances."""
-    if isinstance(name, Formatter):
-        return name
-    try:
-        cls = REGISTRY[name]
-    except KeyError:
-        cls = utils.path.import_class(Formatter, name)
-    return cls(**kwargs)
 
 
 class Formatter:
     """Base class for converting RPC responses to user output."""
 
-    NAME: str
-
-    def __init_subclass__(cls) -> None:
-        REGISTRY[cls.NAME] = cls
+    def __init_subclass__(cls, /, name: str) -> None:
+        REGISTRY.set(name, cls)
 
     def process(self, res: Any) -> None:
         """Automatically iterate through generators and print results."""
@@ -46,3 +32,4 @@ class Formatter:
 
 
 REGISTRY = Registry(__name__, Formatter)
+get, create = REGISTRY.get, REGISTRY.create

@@ -133,12 +133,12 @@ class Protocol:
         if logs.is_debug(log):
             log.debug('handshake <- %s', self._con._addr)
 
-        codec = '' if self._ifc.codec is None else self._ifc.codec.NAME
-        data = HANDSHAKE + codec.encode()
+        codec_name = self._ifc.codec_name
+        data = HANDSHAKE + codec_name.encode()
 
         self._con.send(data)
         if logs.is_debug(log):
-            log.debug('handshake(codec=%s) -> %s', codec, self._con._addr)
+            log.debug('handshake(codec=%s) -> %s', codec_name, self._con._addr)
 
         return self._con.recv()
 

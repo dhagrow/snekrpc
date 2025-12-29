@@ -76,7 +76,7 @@ def import_class(BaseType: type[T], name: str) -> type[T]:
     mod = importlib.import_module(mod_name)
     cls = getattr(mod, cls_name)
 
-    if not isinstance(cls, BaseType):
+    if not issubclass(cls, BaseType):
         raise TypeError(f'expected a class of type {BaseType}, got {cls}')
 
     return cast(type[T], cls)

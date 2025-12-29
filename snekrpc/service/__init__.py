@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 import itertools
 from collections.abc import Callable, Iterator, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 import msgspec
 
@@ -18,6 +18,15 @@ if TYPE_CHECKING:
 log = logs.get(__name__)
 
 
+class Service:
+    def __init_subclass__(cls, /, name: str) -> None:
+        REGISTRY.set(name, cls)
+
+
+REGISTRY = Registry(__name__, Service)
+get, create = REGISTRY.get, REGISTRY.create
+
+
 class ServiceSpec(msgspec.Struct, frozen=True):
     """Description of a callable signature."""
 
@@ -25,53 +34,19 @@ class ServiceSpec(msgspec.Struct, frozen=True):
     doc: str | None
     commands: tuple[utils.function.SignatureSpec, ...]
 
+    @classmethod
+    def from_service(cls, service_name: str, svc: Service) -> Self:
+        """Serialize a service definition for metadata responses."""
+        # commands have a `_meta` attribute
+        commands = []
+        for name in dir(svc):
+            if name.startswith('_'):
+                continue
+            attr = getattr(svc, name)
+            if getattr(attr, '_meta', None) is not None:
+                commands.append(utils.function.encode(attr))
 
-def parse_alias(name: str) -> tuple[str, str | None]:
-    """Split ``name`` into ``module`` and ``alias`` if ``:`` is present."""
-    try:
-        base, alias = name.split(':')
-    except ValueError:
-        return name, None
-    return base, alias
-
-
-def create(name: str | Service, **kwargs: dict[str, Any]) -> Service:
-    """Return a service by name or pass through existing instances."""
-    if isinstance(name, Service):
-        return name
-    try:
-        cls = REGISTRY[name]
-    except KeyError:
-        cls = utils.path.import_class(Service, name)
-    return cls(**kwargs)
-
-
-def get(name: str) -> type[Service]:
-    """Return the registered Service subclass for ``name``."""
-    return REGISTRY[name]
-
-
-def encode(service_name: str, svc: Service) -> ServiceSpec:
-    """Serialize a service definition for metadata responses."""
-    # commands have a `_meta` attribute
-    commands = []
-    for name in dir(svc):
-        if name.startswith('_'):
-            continue
-        attr = getattr(svc, name)
-        if getattr(attr, '_meta', None) is not None:
-            commands.append(utils.function.encode(attr))
-
-    return ServiceSpec(service_name, svc.__doc__, tuple(commands))
-
-
-class Service:
-    """Base class for RPC services."""
-
-    NAME: str
-
-    def __init_subclass__(cls) -> None:
-        REGISTRY[cls.NAME] = cls
+        return cls(service_name, svc.__doc__, tuple(commands))
 
 
 class ServiceProxy:
@@ -97,15 +72,12 @@ class ServiceProxy:
             client.retry_count, client.retry_interval, errors=[errors.TransportError], logger=log
         )
 
-        def wrap_command(spec: utils.function.SignatureSpec) -> Callable[..., Any]:
-            return wrap_call(self, spec.name, spec)
-
         if command_metadata is True:
             meta = ServiceProxy('_meta', client, command_metadata=False)
             svc = msgspec.convert(meta.service(self._svc_name), ServiceSpec)
-            self._commands.update({c.name: wrap_command(c) for c in svc.commands})
+            self._commands.update({c.name: wrap_call(self, c.name, c) for c in svc.commands})
         elif command_metadata:
-            self._commands.update({c.name: wrap_command(c) for c in command_metadata})
+            self._commands.update({c.name: wrap_call(self, c.name, c) for c in command_metadata})
 
     def __getattr__(self, cmd_name: str) -> Callable[..., Any]:
         """Return a cached callable or lazily wrap the remote command."""
@@ -119,6 +91,22 @@ class ServiceProxy:
     def __dir__(self) -> list[str]:
         """Add remote command names to ``dir()`` results."""
         return list(self._commands.keys()) + list(super().__dir__())
+
+
+class StreamInitiator:
+    """Generator shim that ensures the generator is started."""
+
+    def __init__(self, gen: Iterator[Any]) -> None:
+        """Prime the generator while preserving the first item."""
+        try:
+            gen = itertools.chain([next(gen)], gen)
+        except StopIteration:
+            pass
+        self._gen = gen
+
+    def __iter__(self) -> Iterator[Any]:
+        """Yield the cached first item followed by the original stream."""
+        yield from self._gen
 
 
 def wrap_call(
@@ -177,20 +165,10 @@ def wrap_call(
     return utils.function.decode(cmd_spec, callback)
 
 
-class StreamInitiator:
-    """Generator shim that ensures the generator is started."""
-
-    def __init__(self, gen: Iterator[Any]) -> None:
-        """Prime the generator while preserving the first item."""
-        try:
-            gen = itertools.chain([next(gen)], gen)
-        except StopIteration:
-            pass
-        self._gen = gen
-
-    def __iter__(self) -> Iterator[Any]:
-        """Yield the cached first item followed by the original stream."""
-        yield from self._gen
-
-
-REGISTRY = Registry(__name__, Service)
+def parse_alias(name: str) -> tuple[str, str | None]:
+    """Split ``name`` into ``module`` and ``alias`` if ``:`` is present."""
+    try:
+        base, alias = name.split(':')
+    except ValueError:
+        return name, None
+    return base, alias

@@ -6,10 +6,8 @@ import snekrpc
 from snekrpc import logs
 
 
-class Service(snekrpc.Service):
+class Service(snekrpc.Service, name='example'):
     """Example service"""
-
-    NAME = 'example'
 
     @snekrpc.command()
     @snekrpc.param('value', 'The value to echo back')
@@ -53,7 +51,8 @@ def main() -> None:
 
     s = snekrpc.Server(args.u, codec=args.c)
     s.add_service(Service(), alias='ex')
-    s.add_service('meta', {'server': s})
+    # this simply exposes the hidden metadata service
+    s.add_service(s.service('_meta'), alias='meta')
     s.serve()
 
 

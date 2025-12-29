@@ -17,10 +17,8 @@ log = logs.get(__name__)
 CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
 
 
-class FileService(Service):
+class FileService(Service, name='file'):
     """Expose file operations such as listing, uploads, and downloads."""
-
-    NAME = 'file'
 
     @param('root_path', doc='root path for all file operations')
     @param('safe_root', doc='ensures that no file operation escapes the root path')

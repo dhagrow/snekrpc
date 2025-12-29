@@ -9,10 +9,8 @@ from collections.abc import Iterator
 from .. import Service, command
 
 
-class HealthService(Service):
+class HealthService(Service, name='health'):
     """Expose heartbeat/ping commands for monitoring."""
-
-    NAME = 'health'
 
     @command()
     def ping(self, count: int = 1, interval: float = 1.0) -> Iterator[None]:

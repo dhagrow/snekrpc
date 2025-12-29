@@ -9,10 +9,8 @@ from msgspec import msgpack
 from . import Codec
 
 
-class MsgpackCodec(Codec):
+class MsgpackCodec(Codec, name='msgpack'):
     """Codec backed by msgpack for compact binary payloads."""
-
-    NAME = 'msgpack'
 
     def encode(self, msg: Any) -> bytes:
         """Serialize values to msgpack bytes."""

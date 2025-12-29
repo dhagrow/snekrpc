@@ -90,7 +90,7 @@ class Parser:
         # parser for transport and service args
         parser = argparse.ArgumentParser(parents=[self.base_parser])
 
-        transport_cls = transport.create(args.url)
+        transport_cls = transport.get(args.url)
         if isinstance(transport_cls, Exception):
             self.add_transport_exception(parser, args.url.scheme, transport_cls)
         else:
@@ -102,7 +102,7 @@ class Parser:
             name, alias = service.parse_alias(name)
             service_cls = service.get(name)
 
-            alias = alias or service_cls.NAME
+            alias = alias or name
             if alias in used_aliases:
                 raise ValueError(f'duplicate service alias: {alias}')
             used_aliases.add(alias)
@@ -249,7 +249,8 @@ class Parser:
         for name in args.services:
             name, alias = service.parse_alias(name)
             s_args = svc_args.get(name, {})
-            s.add_service(name, s_args, alias)
+            svc = service.create(name, **s_args)
+            s.add_service(svc, alias)
 
         s.serve()
 
@@ -318,11 +319,15 @@ class Parser:
 
         self.add_command_args(svc_parser, cmd, single_flags=False)
 
-    def add_transport_args(self, parser: argparse.ArgumentParser, cls: Any) -> None:
+    def add_transport_args(
+        self, parser: argparse.ArgumentParser, cls: type[transport.Transport]
+    ) -> None:
         """Expose transport constructor parameters with a unique prefix."""
         ignored = {'url', 'timeout'}
+        trn_name = transport.REGISTRY.get_name(cls)
+
         trn_parser = parser.add_argument_group(
-            '{} transport arguments'.format(cls.NAME),
+            '{} transport arguments'.format(trn_name),
             'To see arguments for another transport, set the "--url" argument',
         )
 
@@ -333,7 +338,7 @@ class Parser:
             params.append(
                 msgspec.structs.replace(
                     param,
-                    name='_'.join(['transport', cls.NAME, param.name]),
+                    name='_'.join(['transport', trn_name, param.name]),
                     # force keyword-only params for clarity
                     kind=param.kind if param.kind == Param.VAR_KEYWORD else Param.KEYWORD_ONLY,
                     hide=param.name in ignored,

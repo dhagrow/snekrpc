@@ -83,10 +83,9 @@ class TcpConnection(Connection):
             yield chunk
 
 
-class TcpTransport(Transport):
+class TcpTransport(Transport, name='tcp'):
     """Expose the transport API over TCP."""
 
-    NAME = 'tcp'
     log = log
     Connection = TcpConnection
 

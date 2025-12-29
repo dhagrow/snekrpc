@@ -10,30 +10,24 @@ from typing import Any
 from . import Formatter
 
 
-class RawFormatter(Formatter):
+class RawFormatter(Formatter, name='raw'):
     """Write data exactly as returned by the server."""
-
-    NAME = 'raw'
 
     def print(self, res: Any) -> None:
         """Print without adding trailing newlines."""
         print(self.format(res), end='')
 
 
-class PprintFormatter(Formatter):
+class PprintFormatter(Formatter, name='pprint'):
     """Pretty-print results using the stdlib pprint module."""
-
-    NAME = 'pprint'
 
     def print(self, res: Any) -> None:
         """Pretty-print nested structures."""
         pprint.pprint(res)
 
 
-class JsonFormatter(Formatter):
+class JsonFormatter(Formatter, name='json'):
     """Serialize responses to JSON, encoding datetimes and bytes."""
-
-    NAME = 'json'
 
     def format(self, res: Any) -> str:
         """Return a JSON string."""

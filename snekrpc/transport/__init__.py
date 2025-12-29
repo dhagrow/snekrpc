@@ -15,26 +15,11 @@ if TYPE_CHECKING:
 log = logs.get(__name__)
 
 
-def create(url: str | utils.url.Url | Transport, **kwargs: Any) -> Transport:
-    """Return a `Transport` instance for *url*."""
-    if isinstance(url, Transport):
-        return url
-
-    name = utils.url.Url(url).scheme
-    try:
-        cls = REGISTRY[name]
-    except KeyError:
-        cls = utils.path.import_class(Transport, name)
-    return cls(url, **kwargs)
-
-
 class Transport(abc.ABC):
     """Base transport class mirrored across clients and servers."""
 
-    NAME: str
-
-    def __init_subclass__(cls) -> None:
-        REGISTRY[cls.NAME] = cls
+    def __init_subclass__(cls, /, name: str) -> None:
+        REGISTRY.set(name, cls)
 
     def __init__(self, url: str | utils.url.Url):
         """Store the normalized URL for later use."""
@@ -101,3 +86,12 @@ class Connection:
 
 
 REGISTRY = Registry(__name__, Transport)
+
+
+def get(url: str | utils.url.Url) -> type[Transport]:
+    return REGISTRY.get(utils.url.Url(url).scheme)
+
+
+def create(url: str | utils.url.Url, *args: Any, **kwargs: Any) -> Transport:
+    """Create a `Transport` instance for *url*."""
+    return REGISTRY.create(utils.url.Url(url).scheme, url, *args, **kwargs)

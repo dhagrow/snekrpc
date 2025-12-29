@@ -11,10 +11,8 @@ from . import Service, ServiceProxy
 log = logs.get(__name__)
 
 
-class RemoteService(Service, ServiceProxy):
+class RemoteService(Service, ServiceProxy, name='remote'):
     """Expose another RPC service through the current server."""
-
-    NAME = 'remote'
 
     def __init__(
         self,

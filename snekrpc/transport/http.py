@@ -51,10 +51,9 @@ class HTTPHandler(server.BaseHTTPRequestHandler):
         log.debug('%r %s <- %s', self.requestline, code, url)
 
 
-class HTTPTransport(Transport):
+class HTTPTransport(Transport, name='http'):
     """Transport that speaks the RPC protocol over HTTP."""
 
-    NAME = 'http'
     Handler = HTTPHandler
 
     @param('headers')

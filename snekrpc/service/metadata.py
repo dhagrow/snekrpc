@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .. import Service, command, param
-from ..interface import Server
-from . import ServiceSpec, encode
+from ..utils.function import command, param
+from . import Service, ServiceSpec
+
+if TYPE_CHECKING:
+    from ..interface import Server
 
 
-class MetadataService(Service):
+class MetadataService(Service, name='meta'):
     """Expose codec/version info and service definitions."""
-
-    NAME = 'meta'
 
     @param('server', hide=True)
     def __init__(self, server: Server) -> None:
@@ -24,8 +24,8 @@ class MetadataService(Service):
         """Return codec, transport, and version information."""
         ifc = self._server
         return {
-            'codec': None if ifc.codec is None else ifc.codec.NAME,
-            'transport': ifc.transport.NAME,
+            'codec': ifc.codec_name,
+            'transport': ifc.transport_name,
             'version': ifc.version,
         }
 
@@ -37,9 +37,9 @@ class MetadataService(Service):
     @command()
     def services(self) -> list[ServiceSpec]:
         """Return metadata for every service."""
-        return [encode(name, svc) for name, svc in self._server.services()]
+        return [ServiceSpec.from_service(name, svc) for name, svc in self._server.services()]
 
     @command()
     def service(self, name: str) -> ServiceSpec:
         """Return metadata for an individual service."""
-        return encode(name, self._server.service(name))
+        return ServiceSpec.from_service(name, self._server.service(name))

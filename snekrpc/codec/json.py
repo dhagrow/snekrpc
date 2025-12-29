@@ -9,10 +9,8 @@ from msgspec import json
 from . import Codec
 
 
-class JsonCodec(Codec):
+class JsonCodec(Codec, name='json'):
     """Codec that serializes RPC payloads using JSON."""
-
-    NAME = 'json'
 
     def encode(self, msg: Any) -> bytes:
         """Encode Python objects to JSON bytes."""
