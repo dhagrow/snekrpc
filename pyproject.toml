@@ -1,6 +1,6 @@
 [project]
 name = "snekrpc"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
     "makefun>=1.16.0",
     "msgpack>=1.0.8",
@@ -24,10 +24,10 @@ module-root = ""
 name = "snekrpc"
 script = "snekrpc"
 
-[tool.mypy]
-strict = true
-packages = ["snekrpc"]
-disable_error_code = ["metaclass", "type-abstract"]
+# [tool.mypy]
+# strict = true
+# packages = ["snekrpc"]
+# disable_error_code = ["metaclass", "type-abstract"]
 
 [tool.ruff]
 line-length = 100
@@ -50,7 +50,6 @@ docstring-code-format = true
 
 [dependency-groups]
 dev = [
-    "mypy>=1.19.1",
     "pytest>=9.0.1",
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.8.0",
