@@ -1,6 +1,6 @@
 # snekrpc
 
-`snekrpc` is a lightweight Python RPC toolkit focused on fast prototyping for microservices and distributed systems. It ships with a small core, with pluggable transports and codecs. A client-side Python library and CLI are generated at runtime based on metadata from services.
+`snekrpc` is a lightweight Python RPC toolkit focused on fast prototyping for microservices and distributed systems. It ships a small core, with pluggable transports and codecs. A client-side Python library and CLI are generated at runtime based on metadata from services.
 
 ## Features
 
@@ -34,8 +34,6 @@ $ uv sync
 
 ### Define a service and start a server
 
-*The server will bind to `tcp://127.0.0.1:12321`, by default. The client API and CLI will also connect to this, by default.*
-
 ```python
 import snekrpc
 
@@ -49,7 +47,11 @@ server.add_service(EchoService())
 server.serve()
 ```
 
-### Call from a client
+The server will bind to `tcp://127.0.0.1:12321`, by default. The client API and CLI will also connect to this, by default.
+
+You can pass in a different address in the same URL format, where the scheme determines the transport to use (e.g. `http://localhost:5000`).
+
+### Call with a client API
 
 ```python
 import snekrpc
@@ -59,7 +61,7 @@ echo_svc = client.service('echo')
 print(echo_svc.echo('hello'))
 ```
 
-### Use the CLI
+### Call with a client CLI
 
 List available services and call a command:
 
@@ -106,4 +108,4 @@ and keep the public API backwards compatible where possible.
 
 ## License
 
-MIT. See [License](LICENSE.txt).
+MIT

@@ -53,6 +53,13 @@ colorlog = [
     "colorlog>=6.10.1",
 ]
 dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocs-mermaid2-plugin>=1.2.3",
+    "mkdocs-terminal>=4.7.0",
+    "mkdocstrings[python]>=1.0.0",
+    "pygments>=2.19.2",
+    "pymdown-extensions>=10.20",
     "pytest>=9.0.1",
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.8.0",

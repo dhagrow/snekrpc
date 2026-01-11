@@ -10,11 +10,11 @@ from .. import Service, command
 
 
 class HealthService(Service, name='health'):
-    """Expose heartbeat/ping commands for monitoring."""
+    """Expose a heartbeat for monitoring."""
 
     @command()
     def ping(self, count: int = 1, interval: float = 1.0) -> Iterator[None]:
-        """Yield `None` several times to keep the connection alive."""
+        """Respond at regular intervals."""
         iterator = range(count - 1) if count > 0 else itertools.count()
         for _ in iterator:
             yield

@@ -1,0 +1,36 @@
+site_name: snekrpc docs
+theme:
+  name: terminal
+  palette: dark
+  features:
+    - style.links.underline.hide
+extra_css:
+  - stylesheets/extra.css
+nav:
+  - Home: index.md
+  - Guides:
+      - Server: server.md
+      - Client: client.md
+  - Reference:
+      - API: api.md
+plugins:
+  - search
+  - mkdocstrings
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_style: lightbulb
+      noclasses: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+  # Python Markdown
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - meta

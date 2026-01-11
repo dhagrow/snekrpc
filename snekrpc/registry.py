@@ -6,7 +6,7 @@ from threading import Event, Lock
 from typing import Any, Generic, TypeVar
 
 from . import logs
-from .utils.path import import_class, import_package
+from .utils.path import import_package
 
 log = logs.get(__name__)
 
