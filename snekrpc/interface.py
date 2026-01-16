@@ -118,7 +118,7 @@ class Server(Interface):
     ) -> None:
         super().__init__(transport, codec or DEFAULT_CODEC, version)
         self._services: dict[str, Service] = {}
-        self.add_service(create_service('meta', server=self), alias='_meta')
+        self.add_service(create_service('meta', server=self), name='_meta')
         self.remote_tracebacks = remote_tracebacks
 
     def serve(self) -> None:
@@ -136,13 +136,13 @@ class Server(Interface):
     def join(self, timeout: float | None = None) -> None:
         self.transport.join(timeout)
 
-    def add_service(self, service: Service, alias: str | None = None) -> Server:
+    def add_service(self, service: Service, name: str | None = None) -> Server:
         """Register a service with the server.
 
         You can register a service but keep it hidden from users by prefixing
         the name with an underscore.
         """
-        name = alias or SERVICE_REGISTRY.get_name(type(service))
+        name = name or SERVICE_REGISTRY.get_name(type(service))
         self._services[name] = service
         log.debug('service added: %s', name)
         return self

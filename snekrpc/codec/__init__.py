@@ -12,8 +12,8 @@ from ..registry import Registry
 class Codec(abc.ABC):
     """Base class for codecs that know how to encode/decode RPC payloads."""
 
-    def __init_subclass__(cls, /, name: str) -> None:
-        REGISTRY.set(name, cls)
+    def __init_subclass__(cls, /, name: str | None = None) -> None:
+        REGISTRY.set(cls.__name__ if name is None else name, cls)
 
     @abc.abstractmethod
     def encode(self, msg: Any) -> bytes:

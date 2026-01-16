@@ -19,8 +19,8 @@ log = logs.get(__name__)
 
 
 class Service:
-    def __init_subclass__(cls, /, name: str) -> None:
-        REGISTRY.set(name, cls)
+    def __init_subclass__(cls, /, name: str | None = None) -> None:
+        REGISTRY.set(cls.__name__ if name is None else name, cls)
 
 
 REGISTRY = Registry(__name__, Service)
@@ -163,12 +163,3 @@ def wrap_call(
     if not cmd_spec:
         return callback
     return utils.function.decode(cmd_spec, callback)
-
-
-def parse_alias(name: str) -> tuple[str, str | None]:
-    """Split ``name`` into ``module`` and ``alias`` if ``:`` is present."""
-    try:
-        base, alias = name.split(':')
-    except ValueError:
-        return name, None
-    return base, alias

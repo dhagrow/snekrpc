@@ -99,7 +99,7 @@ class Parser:
         # add service arguments
         used_aliases = set()
         for name in sorted(args.services):
-            name, alias = service.parse_alias(name)
+            name, alias = parse_alias(name)
             service_cls = service.get(name)
 
             alias = alias or name
@@ -247,7 +247,7 @@ class Parser:
 
         # add services
         for name in args.services:
-            name, alias = service.parse_alias(name)
+            name, alias = parse_alias(name)
             s_args = svc_args.get(name, {})
             svc = service.create(name, **s_args)
             s.add_service(svc, alias)
@@ -699,6 +699,15 @@ class Parser:
 ##
 ## cli utils
 ##
+
+
+def parse_alias(name: str) -> tuple[str, str | None]:
+    """Split ``name`` into ``module`` and ``alias`` if ``:`` is present."""
+    try:
+        base, alias = name.split(':')
+    except ValueError:
+        return name, None
+    return base, alias
 
 
 def is_stream_hint(hint: str | None) -> bool:

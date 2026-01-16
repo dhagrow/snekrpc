@@ -11,8 +11,8 @@ from ..registry import Registry
 class Formatter:
     """Base class for converting RPC responses to user output."""
 
-    def __init_subclass__(cls, /, name: str) -> None:
-        REGISTRY.set(name, cls)
+    def __init_subclass__(cls, /, name: str | None = None) -> None:
+        REGISTRY.set(cls.__name__ if name is None else name, cls)
 
     def process(self, res: Any) -> None:
         """Automatically iterate through generators and print results."""

@@ -18,8 +18,8 @@ log = logs.get(__name__)
 class Transport(abc.ABC):
     """Base transport class mirrored across clients and servers."""
 
-    def __init_subclass__(cls, /, name: str) -> None:
-        REGISTRY.set(name, cls)
+    def __init_subclass__(cls, /, name: str | None = None) -> None:
+        REGISTRY.set(cls.__name__ if name is None else name, cls)
 
     def __init__(self, url: str | utils.url.Url):
         """Store the normalized URL for later use."""
