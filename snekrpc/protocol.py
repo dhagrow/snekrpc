@@ -113,7 +113,7 @@ class Protocol:
 
         data = self._con.recv()
         if not data:
-            raise errors.TransportError(errors.ReceiveInterrupted())
+            raise errors.ReceiveInterrupted()
 
         op, codec = data[:1], data[1:].decode()
         if op != HANDSHAKE:
