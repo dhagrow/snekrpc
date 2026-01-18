@@ -6,3 +6,6 @@ lint:
 
 format:
     uv run ruff format
+
+docs:
+    mkdocs serve --livereload
