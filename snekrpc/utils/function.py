@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import re
 from inspect import (
     Parameter,
     Signature,
-    formatannotation,
     isgeneratorfunction,
     signature,
 )
 from inspect import _ParameterKind as ParameterKind
+from inspect import (
+    formatannotation as _formatannotation,
+)
 from typing import Any, Callable, ParamSpec, TypeVar, cast
 
 import msgspec
@@ -83,6 +86,29 @@ class SignatureSpec(msgspec.Struct, frozen=True):
     return_annotation: str | None = None
     is_generator: bool = False
 
+    def to_signature(self, include_self: bool = False) -> Signature:
+        params = []
+
+        if include_self:
+            params.append(Parameter('self', ParameterKind.POSITIONAL_OR_KEYWORD))
+
+        for param in self.parameters:
+            params.append(
+                Parameter(
+                    name=param.name,
+                    kind=param.kind,
+                    default=param.default if param.has_default else Parameter.empty,
+                    annotation=param.annotation
+                    if param.annotation is not None
+                    else Signature.empty,
+                )
+            )
+
+        return_annotation = (
+            self.return_annotation if self.return_annotation is not None else Signature.empty
+        )
+        return Signature(parameters=params, return_annotation=return_annotation)
+
 
 def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec:
     """Encode the signature of `func` into a serializable `SignatureSpec`.
@@ -108,7 +134,7 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
             param.kind,
             None
             if param.annotation is Parameter.empty
-            else formatannotation(param.annotation).strip("'"),
+            else formatannotation(param.annotation, 'server').strip("'"),
             param.default if has_default else None,
             has_default,
             False if param_meta is None else param_meta.hide,
@@ -129,7 +155,7 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
         tuple(params.values()),
         None
         if sig.return_annotation is Signature.empty
-        else formatannotation(sig.return_annotation),
+        else formatannotation(sig.return_annotation, 'server'),
         isgeneratorfunction(func),
     )
 
@@ -140,19 +166,16 @@ def decode(spec: SignatureSpec, func: Callable[..., Any]) -> Callable[..., Any]:
         func_type = 'generator' if spec.is_generator else 'regular'
         raise TypeError(f'expected {func_type} function to decode signature')
 
-    params = []
-    for param in spec.parameters:
-        params.append(
-            Parameter(
-                name=param.name,
-                kind=param.kind,
-                default=param.default if param.has_default else Parameter.empty,
-                annotation=param.annotation if param.annotation is not None else Signature.empty,
-            )
-        )
-
-    return_annotation = (
-        spec.return_annotation if spec.return_annotation is not None else Signature.empty
-    )
-    sig = Signature(parameters=params, return_annotation=return_annotation)
+    sig = spec.to_signature()
     return cast(Callable[..., Any], create_function(sig, func, func_name=spec.name))
+
+
+def formatannotation(annotation, base_module: str):
+    """Extend `inspect.formatannotation` to also strip *base_module* as a prefix."""
+
+    def repl(match):
+        text = match.group()
+        return text.removeprefix(f'{base_module}.')
+
+    anno = _formatannotation(annotation, base_module)
+    return re.sub(r'[\w\.]+', repl, anno)

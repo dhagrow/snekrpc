@@ -72,7 +72,7 @@ def main() -> None:
     logs.init(args.v)
 
     s = snekrpc.Server(args.u, codec=args.c)
-    s.add_service(Service(), name='ex')
+    s.add_service(Service())
     # this simply exposes the hidden metadata service
     s.add_service(s.service('_meta'), name='meta')
     s.serve()

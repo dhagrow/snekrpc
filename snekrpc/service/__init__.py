@@ -35,16 +35,17 @@ class ServiceSpec(msgspec.Struct, frozen=True):
     commands: tuple[utils.function.SignatureSpec, ...]
 
     @classmethod
-    def from_service(cls, service_name: str, svc: Service) -> Self:
+    def from_service(cls, svc: type[Service], service_name: str | None = None) -> Self:
         """Serialize a service definition for metadata responses."""
         # commands have a `_meta` attribute
         commands = []
+        service_name = REGISTRY.get_name(svc) if service_name is None else service_name
         for name in dir(svc):
             if name.startswith('_'):
                 continue
             attr = getattr(svc, name)
             if getattr(attr, '_meta', None) is not None:
-                commands.append(utils.function.encode(attr))
+                commands.append(utils.function.encode(attr, remove_self=True))
 
         return cls(service_name, svc.__doc__, tuple(commands))
 

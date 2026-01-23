@@ -1,0 +1,29 @@
+# ruff: noqa
+
+{% for import in imports -%}
+{{ import }}
+{% endfor %}
+
+import msgspec
+import snekrpc
+
+{% for struct in structs %}
+{{ struct -}}
+{% endfor -%}
+
+{% for service_name, spec in specs.items() %}
+class {{ service_name }}:
+    def __init__(self, proxy: snekrpc.service.ServiceProxy):
+        self._proxy = proxy
+{% for command in spec.commands %}
+    def {{ command.name }}{{ command.to_signature(include_self=True).format() }}:
+        {{ '' if command.return_annotation == 'None' else 'return ' -}} self._proxy.{{ command.name }}({% for param in command.parameters -%} {{ param.name }} {%- endfor %})
+{% endfor %}{% endfor %}
+
+class Client(snekrpc.Client):
+{%- for service_name, spec in specs.items() %}
+    @property
+    def {{ spec.name }}(self) -> {{ service_name }}:
+        proxy = self.service('{{ spec.name }}')
+        return {{ service_name }}(proxy)
+{% endfor %}
