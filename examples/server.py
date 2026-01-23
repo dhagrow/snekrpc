@@ -1,19 +1,21 @@
 import argparse
 import random
 import time
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Iterable
+
+import msgspec
 
 import snekrpc
 from snekrpc import logs
 
 
-@dataclass
-class Event:
+class Event(msgspec.Struct):
     name: str
     message: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now().astimezone(timezone.utc))
+    timestamp: datetime = msgspec.field(
+        default_factory=lambda: datetime.now().astimezone(timezone.utc)
+    )
 
 
 class Service(snekrpc.Service, name='example'):
@@ -26,9 +28,13 @@ class Service(snekrpc.Service, name='example'):
         return value
 
     @snekrpc.command()
+    def event(self) -> Event:
+        return Event('Test', 'a single event!')
+
+    @snekrpc.command()
     def events(self) -> Iterable[Event]:
         while True:
-            yield Event('event!', 'Test Event')
+            yield Event('Test', 'an event in a stream!')
             time.sleep(1)
 
     @snekrpc.command()
