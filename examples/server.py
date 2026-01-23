@@ -1,9 +1,19 @@
 import argparse
 import random
+import time
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Iterable
 
 import snekrpc
 from snekrpc import logs
+
+
+@dataclass
+class Event:
+    name: str
+    message: str
+    timestamp: datetime = field(default_factory=lambda: datetime.now().astimezone(timezone.utc))
 
 
 class Service(snekrpc.Service, name='example'):
@@ -14,6 +24,12 @@ class Service(snekrpc.Service, name='example'):
     def echo(self, value: Any) -> Any:
         """Echo back the input value."""
         return value
+
+    @snekrpc.command()
+    def events(self) -> Iterable[Event]:
+        while True:
+            yield Event('event!', 'Test Event')
+            time.sleep(1)
 
     @snekrpc.command()
     def chunk(self) -> bytes:
