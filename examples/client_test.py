@@ -1,4 +1,4 @@
-from client import Client, Event
+from .client import Client, Command
 
 
 def main():
@@ -7,10 +7,12 @@ def main():
 
     print(f'{svc.echo("ping")=}')
 
+    svc.command(Command('asdf', {'a': 1}))
+
     print(f'{svc.event()=}')
 
     for event in svc.events():
-        print(f'{Event(**event)=}')
+        print(f'[{event.name}] {event.message}')
 
 
 if __name__ == '__main__':

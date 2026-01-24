@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import re
+import typing
 from inspect import (
     Parameter,
     Signature,
@@ -10,9 +10,6 @@ from inspect import (
     signature,
 )
 from inspect import _ParameterKind as ParameterKind
-from inspect import (
-    formatannotation as _formatannotation,
-)
 from typing import Any, Callable, ParamSpec, TypeVar, cast
 
 import msgspec
@@ -132,9 +129,7 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
             param.name,
             None if param_meta is None else param_meta.doc,
             param.kind,
-            None
-            if param.annotation is Parameter.empty
-            else formatannotation(param.annotation, 'server').strip("'"),
+            None if param.annotation is Parameter.empty else format_annotation(param.annotation),
             param.default if has_default else None,
             has_default,
             False if param_meta is None else param_meta.hide,
@@ -155,7 +150,7 @@ def encode(func: Callable[..., Any], remove_self: bool = False) -> SignatureSpec
         tuple(params.values()),
         None
         if sig.return_annotation is Signature.empty
-        else formatannotation(sig.return_annotation, 'server'),
+        else format_annotation(sig.return_annotation),
         isgeneratorfunction(func),
     )
 
@@ -170,12 +165,15 @@ def decode(spec: SignatureSpec, func: Callable[..., Any]) -> Callable[..., Any]:
     return cast(Callable[..., Any], create_function(sig, func, func_name=spec.name))
 
 
-def formatannotation(annotation, base_module: str):
-    """Extend `inspect.formatannotation` to also strip *base_module* as a prefix."""
+def format_annotation(anno: Any) -> str:
+    def split_last(s: str):
+        return s.rsplit('.', 1)[-1]
 
-    def repl(match):
-        text = match.group()
-        return text.removeprefix(f'{base_module}.')
+    origin = typing.get_origin(anno)
+    if not origin:
+        return str(anno) if anno is None else split_last(anno.__name__)
+    args = typing.get_args(anno)
+    if not args:
+        return origin
 
-    anno = _formatannotation(annotation, base_module)
-    return re.sub(r'[\w\.]+', repl, anno)
+    return f'{split_last(origin.__name__)}[{split_last(args[0].__name__)}]'

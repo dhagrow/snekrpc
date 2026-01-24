@@ -10,6 +10,11 @@ import snekrpc
 from snekrpc import logs
 
 
+class Command(msgspec.Struct):
+    name: str
+    arguments: dict[str, Any]
+
+
 class Event(msgspec.Struct):
     name: str
     message: str
@@ -26,6 +31,10 @@ class Service(snekrpc.Service, name='example'):
     def echo(self, value: Any) -> Any:
         """Echo back the input value."""
         return value
+
+    @snekrpc.command()
+    def command(self, command: Command) -> None:
+        print(f'{command=}')
 
     @snekrpc.command()
     def event(self) -> Event:

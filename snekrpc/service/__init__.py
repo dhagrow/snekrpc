@@ -138,14 +138,14 @@ def wrap_call(
         gen = call(*args, **kwargs)
         isgen = next(gen)
         if isgen:
-            raise errors.ParameterError('unexpected stream result')
+            raise errors.ParameterError('did not expect a stream')
         return next(gen)
 
     def call_stream(*args: Any, **kwargs: Any) -> Any:
         gen = call(*args, **kwargs)
         isgen = next(gen)
         if not isgen:
-            raise errors.ParameterError('expected stream result')
+            raise errors.ParameterError('expected a stream')
         return iter(StreamInitiator(gen))
 
     if cmd_spec and cmd_spec.is_generator:
