@@ -2,7 +2,6 @@ import inspect
 from datetime import datetime
 from typing import Iterable
 
-import msgspec
 from jinja2 import Environment, PackageLoader
 
 import snekrpc
@@ -11,7 +10,7 @@ from snekrpc.service import ServiceSpec
 
 def generate(
     services: Iterable[type[snekrpc.Service]],
-    structs: Iterable[type[msgspec.Struct]] | None = None,
+    data_classes: Iterable[type] | None = None,
     imports: Iterable[str] | None = None,
 ) -> str:
     env = Environment(loader=PackageLoader('snekrpc'))
@@ -20,7 +19,7 @@ def generate(
         timestamp=datetime.now().astimezone(),
         default_url=':1234',
         specs={service.__name__: ServiceSpec.from_service(service) for service in services},
-        structs=[inspect.getsource(struct) for struct in structs] if structs else [],
+        classes=[inspect.getsource(struct) for struct in data_classes] if data_classes else [],
         imports=imports or [],
     )
 

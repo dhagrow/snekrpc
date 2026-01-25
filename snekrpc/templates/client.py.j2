@@ -9,10 +9,11 @@
 {{ import }}
 {% endfor %}
 import msgspec
+
 import snekrpc
 
-{% for struct in structs %}
-{{ struct }}
+{% for class in classes %}
+{{ class }}
 {% endfor -%}
 
 {% for service_name, spec in specs.items() %}
