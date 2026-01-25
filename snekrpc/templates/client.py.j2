@@ -3,8 +3,6 @@
 ## Generated: {{ timestamp.isoformat() }}
 ##
 
-# ruff: noqa
-
 {% for import in imports -%}
 {{ import }}
 {% endfor %}
@@ -24,7 +22,7 @@ class {{ service_name }}:
 
     def {{ command.name }}{{ command.to_signature(include_self=True).format() }}:
     {%- if command.return_annotation == 'None' %}
-        self._proxy.{{ command.name }}({% for param in command.parameters -%} {{ param.name }} {%- endfor %})
+        self._proxy.{{ command.name }}({{ command.parameters | join(', ', attribute='name') }})
     {%- elif command.is_generator %}
         res = self._proxy.{{ command.name }}({% for param in command.parameters -%} {{ param.name }} {%- endfor %})
         for r in res:
@@ -43,4 +41,4 @@ class Client(snekrpc.Client):
     def {{ spec.name }}(self) -> {{ service_name }}:
         proxy = self.service('{{ spec.name }}')
         return {{ service_name }}(proxy)
-{%- endfor %}
+{% endfor %}

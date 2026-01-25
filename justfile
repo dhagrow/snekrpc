@@ -1,8 +1,8 @@
 default:
   just --list
 
-lint:
-    uv run ruff check
+lint *args:
+    uv run ruff check {{args}}
 
 format:
     uv run ruff format

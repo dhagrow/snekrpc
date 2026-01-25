@@ -8,6 +8,7 @@ import io
 import os
 import pkgutil
 from collections.abc import Generator
+from types import ModuleType
 from typing import BinaryIO, TypeVar, cast
 
 from .. import logs
@@ -58,14 +59,15 @@ def import_package(pkgname: str) -> None:
             logs.error_logger(log)('import error: %s - %s', modname, e)
 
 
-def import_module(modname: str, pkgname: str | None = None) -> None:
+def import_module(modname: str, pkgname: str | None = None) -> ModuleType:
     """Import a module, optionally relative to *pkgname*."""
     name = '.'.join(filter(None, [pkgname, modname]))
     log.debug('loading: %s', name)
-    if pkgname:
+    return (
         importlib.import_module(f'.{modname}', pkgname)
-    else:
-        importlib.import_module(modname)
+        if pkgname
+        else importlib.import_module(modname)
+    )
 
 
 T = TypeVar('T')
