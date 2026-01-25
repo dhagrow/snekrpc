@@ -87,9 +87,6 @@ class Client(Interface):
             self._con.close()
         self._con = None
 
-    def __getitem__(self, name: str) -> ServiceProxy:
-        return self.service(name)
-
     def __getattr__(self, name: str) -> ServiceProxy:
         try:
             return self.service(name)

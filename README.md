@@ -9,8 +9,9 @@
 - Built-in transports: TCP, Unix domain sockets, and HTTP (not REST)
 - Built-in codecs: JSON and [MessagePack](https://msgpack.org/) (based on [msgspec](https://github.com/jcrist/msgspec))
 - Built-in services: `health`, `file`, and `remote` (service pivoting/forwarding)
-- Runtime generated Python API
-- Runtime generated CLI
+- Runtime generated client API
+- Runtime generated client CLI
+- Pre-generated typed client API
 
 ## Requirements
 
