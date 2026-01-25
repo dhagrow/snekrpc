@@ -25,3 +25,9 @@
   overflow-x: auto;
   text-wrap: nowrap;
 }
+
+/* section indentation */
+#mkdocs-terminal-content .doc .doc-contents {
+  margin-top: -1em;
+  margin-left: 20px;
+}

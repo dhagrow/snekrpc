@@ -1,4 +1,5 @@
 dist/
+site/
 __pycache__/
 *.egg-info/
 .venv/

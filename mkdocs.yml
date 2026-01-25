@@ -15,7 +15,13 @@ nav:
       - API: api.md
 plugins:
   - search
-  - mkdocstrings
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_source: false
+  - mike
 markdown_extensions:
   - admonition
   - toc:
