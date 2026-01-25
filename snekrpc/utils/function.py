@@ -166,8 +166,14 @@ def decode(spec: SignatureSpec, func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def format_annotation(anno: Any) -> str:
+    """Formats annotations in a format compatible with snekrpc client generation."""
+
     def split_last(s: str):
         return s.rsplit('.', 1)[-1]
+
+    if isinstance(anno, str):
+        # probably a type too complicated to bother with
+        return anno
 
     origin = typing.get_origin(anno)
     if not origin:

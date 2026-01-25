@@ -12,26 +12,29 @@ import msgspec
 import snekrpc
 
 {% for struct in structs %}
-{{ struct -}}
+{{ struct }}
 {% endfor -%}
 
 {% for service_name, spec in specs.items() %}
 class {{ service_name }}:
     def __init__(self, proxy: snekrpc.service.ServiceProxy):
         self._proxy = proxy
-{% for command in spec.commands %}
+{%- for command in spec.commands %}
+
     def {{ command.name }}{{ command.to_signature(include_self=True).format() }}:
     {%- if command.return_annotation == 'None' %}
         self._proxy.{{ command.name }}({% for param in command.parameters -%} {{ param.name }} {%- endfor %})
-    {% elif command.is_generator %}
+    {%- elif command.is_generator %}
         res = self._proxy.{{ command.name }}({% for param in command.parameters -%} {{ param.name }} {%- endfor %})
         for r in res:
-            yield msgspec.convert(r, type={{ command.return_annotation }}.__args__[0]) # type: ignore
-    {% else %}
+            yield msgspec.convert(r, type={{ command.return_annotation }}.__args__[0])  # type: ignore
+    {%- else %}
         res = self._proxy.{{ command.name }}({% for param in command.parameters -%} {{ param.name }} {%- endfor %})
         return msgspec.convert(res, type={{ command.return_annotation }})
-    {% endif -%}
-{% endfor %}{% endfor %}
+{%- endif -%}
+
+{% endfor %}
+{% endfor %}
 
 class Client(snekrpc.Client):
 {%- for service_name, spec in specs.items() %}
