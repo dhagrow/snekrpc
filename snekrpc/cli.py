@@ -536,6 +536,7 @@ class Parser:
             '--url',
             type=utils.url.Url,
             default=utils.DEFAULT_URL,
+            metavar='TRANSPORT://HOST:PORT',
             help='URL to connect or bind to (default: {})'.format(utils.DEFAULT_URL),
         )
         group.add_argument(
@@ -557,11 +558,9 @@ class Parser:
             '--service',
             action='append',
             dest='services',
-            metavar='SERVICE',
+            metavar='SERVICE[:alias]',
             default=[],
-            help='add a service module (can be set multiple times) '
-            'formats: "<built-in service>[:alias]" or '
-            '"<module.ServiceClass>[:alias]"',
+            help='register a service with the server (can be set multiple times)',
         )
 
         group = parser.add_argument_group('client arguments')

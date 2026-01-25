@@ -102,7 +102,7 @@ There is not currently any support provided for `asyncio`. This is primarily due
 
 I'm not opposed to making changes that simplify the integration of `snekrpc` with a project that uses `asyncio`, and will consider any PR to that end. However, I'm not willing to take on the maintenance burden of a feature I don't need or use. Besides, I'd rather be working on the projects this library enables.
 
-## AI disclaimer
+## AI disclosure
 
 I used AI to support some of the documentation for this project. I reviewed all of it and rewrote much of it. I have not yet used AI to write any of the code, though I do have branches I may experiment with.
 
