@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="generator" content="mkdocs-1.6.1, mkdocs-terminal-4.7.0">
+     
+     
+    <link rel="icon" type="image/png" sizes="192x192" href="../img/android-chrome-192x192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="../img/android-chrome-512x512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../img/apple-touch-icon.png" />
+<link rel="shortcut icon" type="image/png" sizes="48x48" href="../img/favicon.ico" />
+<link rel="icon" type="image/png" sizes="16x16" href="../img/favicon-16x16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="../img/favicon-32x32.png" />
+
+
+    
+ 
+<title>Services - snekrpc docs</title>
+
+
+<link href="../css/fontawesome/css/fontawesome.min.css" rel="stylesheet">
+<link href="../css/fontawesome/css/solid.min.css" rel="stylesheet">
+<link href="../css/normalize.css" rel="stylesheet">
+<link href="../css/terminal.css" rel="stylesheet">
+<link href="../css/theme.css" rel="stylesheet">
+<link href="../css/theme.tile_grid.css" rel="stylesheet">
+<link href="../css/theme.footer.css" rel="stylesheet">
+<!-- dark color palette -->
+<link href="../css/palettes/dark.css" rel="stylesheet">
+
+<!-- page layout -->
+<style>
+/* initially set page layout to a one column grid */
+.terminal-mkdocs-main-grid {
+    display: grid;
+    grid-column-gap: 1.4em;
+    grid-template-columns: auto;
+    grid-template-rows: auto;
+}
+
+/*  
+*   when side navigation is not hidden, use a two column grid.  
+*   if the screen is too narrow, fall back to the initial one column grid layout.
+*   in this case the main content will be placed under the navigation panel. 
+*/
+@media only screen and (min-width: 70em) {
+    .terminal-mkdocs-main-grid {
+        grid-template-columns: 4fr 9fr;
+    }
+}</style>
+
+<!-- link underline override -->
+<style>
+#terminal-mkdocs-main-content a:not(.headerlink){
+    text-decoration: none;
+}
+</style>
+
+    
+    <link href="../assets/_mkdocstrings.css" rel="stylesheet"> 
+    <link href="../stylesheets/extra.css" rel="stylesheet">  
+    
+    
+
+    
+    <!-- search css support -->
+<link href="../css/search/bootstrap-modal.css" rel="stylesheet">
+<!-- search scripts -->
+<script>
+    var base_url = "..",
+    shortcuts = "{}";
+</script>
+<script src="../js/jquery/jquery-1.10.1.min.js" defer></script>
+<script src="../js/bootstrap/bootstrap.min.js" defer></script>
+<script src="../js/mkdocs/base.js" defer></script>
+    
+    
+    
+    
+    <script src="../search/main.js"></script>
+    
+
+    
+</head>
+
+<body class="terminal"><div class="container">
+    <div class="terminal-nav">
+        <header class="terminal-logo">
+            <div id="mkdocs-terminal-site-name" class="logo terminal-prompt"><a href="/" class="no-style">snekrpc docs</a></div>
+        </header>
+        
+        <nav class="terminal-menu">
+            
+            <ul vocab="https://schema.org/" typeof="BreadcrumbList">
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href=".." class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Home</span>
+                    </a>
+                    <meta property="position" content="0">
+                </li>
+                
+                
+                
+                
+                
+                    
+                    
+
+
+<li property="itemListElement" typeof="ListItem">
+    <a href="#" class="menu-item" data-toggle="modal" data-target="#mkdocs_search_modal" property="item" typeof="SearchAction">
+        <i aria-hidden="true" class="fa fa-search"></i> <span property="name">Search</span>
+    </a>
+    <meta property="position" content="1">
+</li>
+                    
+            </ul>
+            
+        </nav>
+    </div>
+</div>
+        
+    <div class="container">
+        <div class="terminal-mkdocs-main-grid"><aside id="terminal-mkdocs-side-panel"><nav>
+  
+    <ul class="terminal-mkdocs-side-nav-items">
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="..">Home</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+
+        
+            
+    
+        
+        
+            
+            
+            <span class="
+        
+    
+
+    terminal-mkdocs-side-nav-item terminal-mkdocs-side-nav-section-no-index">Guides</span>
+        
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../server/">Server</a>
+        
+    
+    </li>
+            
+        
+            
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../client/">Client</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+
+        
+            
+    
+        
+        
+            
+            
+            <span class="
+        
+    
+
+    terminal-mkdocs-side-nav-item terminal-mkdocs-side-nav-section-no-index">Reference</span>
+        
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../api/">API</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+    </ul>
+  
+</nav><hr>
+<nav>
+    <ul>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#defining-a-service">Defining a service</a></li><li><a href="#built-in-services">Built-in services</a></li><li><a href="#loading-services-from-the-cli">Loading services from the CLI</a></li>
+    </ul>
+</nav>
+</aside>
+            <main id="terminal-mkdocs-main-content">
+<section id="mkdocs-terminal-content">
+    <h1 id="services">Services<a class="headerlink" href="#services" title="Permanent link">&para;</a></h1>
+<p>Services group related RPC commands. A server holds a registry of service instances and
+exposes them by name. Commands are normal Python callables decorated with
+<code>@snekrpc.command()</code>.</p>
+<h2 id="defining-a-service">Defining a service<a class="headerlink" href="#defining-a-service" title="Permanent link">&para;</a></h2>
+<div class="highlight" style="background: #1d2331"><pre style="line-height: 125%;"><span></span><code><span style="color: #FFAD66">import</span><span style="color: #D4D2C8"> snekrpc</span>
+
+<span style="color: #FFAD66">class</span><span style="color: #D4D2C8"> </span><span style="color: #73D0FF">MathService</span><span style="color: #D4D2C8">(snekrpc</span><span style="color: #FFAD66">.</span><span style="color: #D4D2C8">Service,</span> <span style="color: #D4D2C8">name</span><span style="color: #FFAD66">=</span><span style="color: #D5FF80">&#39;math&#39;</span><span style="color: #D4D2C8">):</span>
+    <span style="color: #7E8AA1; font-weight: bold; font-style: italic">@snekrpc</span><span style="color: #FFAD66">.</span><span style="color: #D4D2C8">command()</span>
+    <span style="color: #FFAD66">def</span><span style="color: #D4D2C8"> </span><span style="color: #FFD173">add</span><span style="color: #D4D2C8">(</span><span style="color: #5CCFE6">self</span><span style="color: #D4D2C8">,</span> <span style="color: #D4D2C8">a:</span> <span style="color: #FFD173">int</span><span style="color: #D4D2C8">,</span> <span style="color: #D4D2C8">b:</span> <span style="color: #FFD173">int</span><span style="color: #D4D2C8">)</span> <span style="color: #FFAD66">-&gt;</span> <span style="color: #FFD173">int</span><span style="color: #D4D2C8">:</span>
+        <span style="color: #FFAD66">return</span> <span style="color: #D4D2C8">a</span> <span style="color: #FFAD66">+</span> <span style="color: #D4D2C8">b</span>
+
+<span style="color: #D4D2C8">server</span> <span style="color: #FFAD66">=</span> <span style="color: #D4D2C8">snekrpc</span><span style="color: #FFAD66">.</span><span style="color: #D4D2C8">Server()</span>
+<span style="color: #D4D2C8">server</span><span style="color: #FFAD66">.</span><span style="color: #D4D2C8">add_service(MathService())</span>
+<span style="color: #D4D2C8">server</span><span style="color: #FFAD66">.</span><span style="color: #D4D2C8">serve()</span>
+</code></pre></div>
+<h2 id="built-in-services">Built-in services<a class="headerlink" href="#built-in-services" title="Permanent link">&para;</a></h2>
+<h3 id="metadata-meta-_meta">Metadata (<code>meta</code> / <code>_meta</code>)<a class="headerlink" href="#metadata-meta-_meta" title="Permanent link">&para;</a></h3>
+<p>The metadata service is automatically registered by the server under the alias <code>_meta</code>.
+It reports codec/transport information and provides command metadata used by the
+client and CLI.</p>
+<p>Commands include:</p>
+<ul>
+<li><code>status()</code></li>
+<li><code>service_names()</code></li>
+<li><code>services()</code></li>
+<li><code>service(name)</code></li>
+</ul>
+<h3 id="health-health">Health (<code>health</code>)<a class="headerlink" href="#health-health" title="Permanent link">&para;</a></h3>
+<p>The health service provides a <code>ping</code> generator that yields regularly to keep a
+connection alive.</p>
+<h3 id="file-file">File (<code>file</code>)<a class="headerlink" href="#file-file" title="Permanent link">&para;</a></h3>
+<p>The file service exposes basic filesystem operations including <code>paths</code>, <code>upload</code>, and
+<code>download</code>. By default, it uses <code>safe_root=True</code> to prevent path traversal beyond the
+configured <code>root_path</code>.</p>
+<h3 id="remote-remote">Remote (<code>remote</code>)<a class="headerlink" href="#remote-remote" title="Permanent link">&para;</a></h3>
+<p>The remote service forwards calls to another endpoint by creating a nested client and
+exposing it under a new service name.</p>
+<h2 id="loading-services-from-the-cli">Loading services from the CLI<a class="headerlink" href="#loading-services-from-the-cli" title="Permanent link">&para;</a></h2>
+<p>You can add services by name or by import path.</p>
+<div class="highlight" style="background: #1d2331"><pre style="line-height: 125%;"><span></span><code>$<span style="color: #D4D2C8"> </span>snekrpc<span style="color: #D4D2C8"> </span>--server<span style="color: #D4D2C8"> </span>--service<span style="color: #D4D2C8"> </span>health<span style="color: #D4D2C8"> </span>--service<span style="color: #D4D2C8"> </span>file
+$<span style="color: #D4D2C8"> </span>snekrpc<span style="color: #D4D2C8"> </span>--server<span style="color: #D4D2C8"> </span>--service<span style="color: #D4D2C8"> </span>mypkg.services.CustomService:alias
+</code></pre></div>
+</section>
+
+            </main>
+        </div>
+        <hr><footer>
+    <div class="terminal-mkdocs-footer-grid">
+        <div id="terminal-mkdocs-footer-copyright-info">
+             Site built with <a href="http://www.mkdocs.org">MkDocs</a> and <a href="https://github.com/ntno/mkdocs-terminal">Terminal for MkDocs</a>.
+        </div>
+    </div>
+</footer>
+    </div>
+
+    
+    <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="alertdialog" aria-modal="true" aria-labelledby="searchModalLabel">
+    <div class="modal-dialog modal-lg" role="search">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchModalLabel">Search</h5>
+                <button type="button" class="close btn btn-default btn-ghost" data-dismiss="modal"><span aria-hidden="true">x</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p id="searchInputLabel">Type to start searching</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" aria-labelledby="searchInputLabel" placeholder="" id="mkdocs-search-query" title="Please enter search terms here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No document matches found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+</body>
+
+</html>
