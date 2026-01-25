@@ -24,7 +24,6 @@ class Interface:
         self,
         transport: str | Transport | None = None,
         codec: str | Codec | None = None,
-        version: str | None = None,
     ) -> None:
         registry.init()
 
@@ -34,7 +33,6 @@ class Interface:
             else create_transport(transport or utils.DEFAULT_URL)
         )
         self.codec = codec
-        self.version = version
 
     @property
     def url(self) -> str:
@@ -63,11 +61,10 @@ class Client(Interface):
         self,
         transport: str | Transport | None = None,
         codec: str | Any | None = None,
-        version: str | None = None,
         retry_count: int | None = None,
         retry_interval: float | None = None,
     ) -> None:
-        super().__init__(transport, codec, version)
+        super().__init__(transport, codec)
         # TODO replace this with a proper connection pool
         self._con: Connection | None = None
         self.retry_count = retry_count
@@ -113,10 +110,13 @@ class Server(Interface):
         version: str | None = None,
         remote_tracebacks: bool = False,
     ) -> None:
-        super().__init__(transport, codec or DEFAULT_CODEC, version)
+        super().__init__(transport, codec or DEFAULT_CODEC)
         self._services: dict[str, Service] = {}
         self.add_service(create_service('meta', server=self), name='_meta')
+        self.version = version
         self.remote_tracebacks = remote_tracebacks
+
+        log.info('server version: %s', version or '-')
 
     def serve(self) -> None:
         try:

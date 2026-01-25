@@ -122,6 +122,8 @@ class Parser:
             if args.help:
                 parser.print_help()
                 parser.exit()
+            if args.version is True:
+                parser.error('expected a version string')
             if args.rest:
                 parser.error('unrecognized arguments: {}'.format(' '.join(args.rest)))
             self.start_server(trn, args, svc_args)
@@ -241,7 +243,7 @@ class Parser:
         s = interface.Server(
             trn,
             codec=args.codec,
-            version=args.server_version,
+            version=args.version,
             remote_tracebacks=args.remote_tracebacks,
         )
 
@@ -519,7 +521,13 @@ class Parser:
             default=0,
             help='enable verbose output (-vv for more)',
         )
-        parser.add_argument('-V', '--version', action='store_true', help='show server version')
+        parser.add_argument(
+            '-V',
+            '--version',
+            nargs='?',
+            const=True,
+            help='show server version (client) or set server version (server)',
+        )
 
         group = parser.add_argument_group('configuration arguments')
 
@@ -578,7 +586,6 @@ class Parser:
 
         group = parser.add_argument_group('server arguments')
 
-        group.add_argument('--server-version', help='version string for the server')
         group.add_argument(
             '--remote-tracebacks', action='store_true', help='send tracebacks with errors'
         )
@@ -693,7 +700,7 @@ class Parser:
         # TODO: abide by --format flag
         width = max(len(k) for k in status)
         for k, v in sorted(status.items()):
-            print('{:>{}}: {}'.format(k, width, v))
+            print('{:>{}}: {}'.format(k, width, v or '-'))
 
 
 ##
