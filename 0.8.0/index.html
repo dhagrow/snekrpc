@@ -108,6 +108,8 @@
                 
                 
                 
+                
+                
                     
                     
 
@@ -265,6 +267,57 @@
     
   </li>
         
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+
+        
+            
+    
+        
+        
+            
+            
+            <span class="
+        
+    
+
+    terminal-mkdocs-side-nav-item terminal-mkdocs-side-nav-section-no-index">Links</span>
+        
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="https://github.com/dhagrow/snekrpc">Github</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
     </ul>
   
 </nav><hr>
@@ -279,6 +332,7 @@
 <section id="mkdocs-terminal-content">
     <h1 id="snekrpc">snekrpc<a class="headerlink" href="#snekrpc" title="Permanent link">&para;</a></h1>
 <p><code>snekrpc</code> is a lightweight Python RPC toolkit focused on fast prototyping for microservices and distributed systems. It ships a small core, with pluggable transports and codecs. A client-side Python library and CLI are generated at runtime based on metadata from services.</p>
+<p><a href="https://dhagrow.github.io/snekrpc">🕮 Documentation</a></p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Simple service model with metadata and runtime introspection</li>
@@ -352,10 +406,13 @@ hello
 <h2 id="what-about-asyncio">What about <code>asyncio</code>?<a class="headerlink" href="#what-about-asyncio" title="Permanent link">&para;</a></h2>
 <p>There is not currently any support provided for <code>asyncio</code>. This is primarily due to the fact that I don't personally use <code>asyncio</code> in either my personal or professional work. Where I need asynchronous IO, I first reach for <a href="https://www.gevent.org">gevent</a>. However I have found fewer and fewer appropriate use-cases for it over the years.</p>
 <p>I'm not opposed to making changes that simplify the integration of <code>snekrpc</code> with a project that uses <code>asyncio</code>, and will consider any PR to that end. However, I'm not willing to take on the maintenance burden of a feature I don't need or use. Besides, I'd rather be working on the projects this library enables.</p>
+<p>See also:
+- https://charlesleifer.com/blog/asyncio/</p>
 <h2 id="ai-disclosure">AI disclosure<a class="headerlink" href="#ai-disclosure" title="Permanent link">&para;</a></h2>
 <p>I used AI to support some of the documentation for this project. I reviewed all of it and rewrote much of it. I have not yet used AI to write any of the code, though I do have branches I may experiment with.</p>
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
-<p>Issues and pull requests are welcome. Please include tests for behavioral changes and keep the public API backwards compatible where possible. I'd like to be able</p>
+<p>Issues and pull requests are welcome. Please include tests for behavioral changes and keep the public API backwards compatible where possible.</p>
+<p>Source code is available at https://github.com/dhagrow/snekrpc.</p>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
 <p>MIT</p>
 </section>
