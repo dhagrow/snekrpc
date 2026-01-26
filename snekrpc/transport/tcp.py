@@ -46,13 +46,13 @@ class TcpConnection(Connection):
 
     def send(self, data: bytes) -> None:
         """Send bytes through the socket."""
+        data_len = len(data)
+        size = struct.pack('>I', data_len)
         try:
-            data_len = len(data)
-            size = struct.pack('>I', data_len)
             self._sock.sendall(size)
             self._sock.sendall(data)
         except OSError as exc:
-            raise errors.TransportError(exc) from exc
+            raise errors.SendInterrupted() from exc
 
     def close(self) -> None:
         """Close the socket."""

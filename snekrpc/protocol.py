@@ -305,6 +305,9 @@ class Protocol:
         """Serialize an exception and send it back to the caller."""
         name = exc.__class__.__name__
         msg = str(exc)
+        # this method is only used by servers, so `remote_tracebacks` will exist
+        # TODO: split protocol into client/server components?
+        assert isinstance(self._ifc, Server)
         tb = traceback.format_exc().rstrip() if self._ifc.remote_tracebacks else ''
 
         log.exception('%s: %s', name, msg)

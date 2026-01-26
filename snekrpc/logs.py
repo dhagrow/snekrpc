@@ -11,7 +11,7 @@ from typing import Callable
 try:
     import colorlog
 except ImportError:
-    colorlog = None
+    colorlog = None  # type: ignore
 
 get = getLogger
 log = get(__name__)

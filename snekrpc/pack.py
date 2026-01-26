@@ -2,14 +2,21 @@ import argparse
 import inspect
 from dataclasses import is_dataclass
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, cast
 
 import msgspec
-from jinja2 import Environment, PackageLoader
 
 import snekrpc
 from snekrpc.service import Service, ServiceSpec
 from snekrpc.utils.path import import_module
+
+try:
+    import jinja2
+except ImportError as e:
+    jinja2 = e  # type: ignore
+
+
+log = snekrpc.logs.get(__name__)
 
 
 def generate_client(
@@ -17,7 +24,10 @@ def generate_client(
     data_classes: Iterable[type] | None = None,
     imports: Iterable[str] | None = None,
 ) -> str:
-    env = Environment(loader=PackageLoader('snekrpc'))
+    if isinstance(jinja2, Exception):
+        raise jinja2
+
+    env = jinja2.Environment(loader=jinja2.PackageLoader('snekrpc'))
     template = env.get_template('client.py.j2')
     return template.render(
         timestamp=datetime.now().astimezone(),
@@ -28,7 +38,7 @@ def generate_client(
     )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser('snekrpc-pack')
     parser.add_argument(
         '-m',
@@ -57,18 +67,23 @@ def main():
 
     args = parser.parse_args()
 
-    data_classes = []
+    data_classes: list[type] = []
     services = []
 
     for module_name in args.modules:
         mod = import_module(module_name)
         for attr in vars(mod).values():
             if is_dataclass(attr) or (inspect.isclass(attr) and issubclass(attr, msgspec.Struct)):
-                data_classes.append(attr)
+                data_classes.append(cast(type, attr))
             elif inspect.isclass(attr) and issubclass(attr, Service):
                 services.append(attr)
 
-    source = generate_client(services, data_classes, args.imports)
+    try:
+        source = generate_client(services, data_classes, args.imports)
+    except ImportError as e:
+        parser.error(
+            f'jinja2 is required. enable client generation with `pip install snekrpc[pack]`: {e}'
+        )
     if args.output_path:
         with open(args.output_path, 'w') as f:
             f.write(source)
