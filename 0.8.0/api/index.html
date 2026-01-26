@@ -267,7 +267,7 @@
 <nav>
     <ul>
         <li><a href="#api-reference">API Reference</a></li>
-        <li><a href="#snekrpc.interface">interface</a></li><li><a href="#snekrpc.interface.Server">Server</a></li><li><a href="#snekrpc.service">service</a></li><li><a href="#snekrpc.service.ServiceProxy">ServiceProxy</a></li><li><a href="#snekrpc.service.ServiceSpec">ServiceSpec</a></li><li><a href="#snekrpc.service.StreamInitiator">StreamInitiator</a></li><li><a href="#snekrpc.service.wrap_call">wrap_call</a></li><li><a href="#snekrpc.transport">transport</a></li><li><a href="#snekrpc.transport.Connection">Connection</a></li><li><a href="#snekrpc.transport.Transport">Transport</a></li><li><a href="#snekrpc.transport.create">create</a></li><li><a href="#snekrpc.codec">codec</a></li><li><a href="#snekrpc.codec.Codec">Codec</a></li><li><a href="#snekrpc.formatter">formatter</a></li><li><a href="#snekrpc.formatter.Formatter">Formatter</a></li><li><a href="#snekrpc.cli">cli</a></li><li><a href="#snekrpc.cli.Parser">Parser</a></li><li><a href="#snekrpc.cli.io_stat_mode">io_stat_mode</a></li><li><a href="#snekrpc.cli.main">main</a></li><li><a href="#snekrpc.cli.parse_alias">parse_alias</a></li>
+        <li><a href="#snekrpc.interface">interface</a></li><li><a href="#snekrpc.service">service</a></li><li><a href="#snekrpc.transport">transport</a></li><li><a href="#snekrpc.codec">codec</a></li><li><a href="#snekrpc.formatter">formatter</a></li><li><a href="#snekrpc.cli">cli</a></li>
     </ul>
 </nav>
 </aside>
@@ -280,7 +280,12 @@
 
 
 
-<a id="snekrpc.interface"></a>
+<h2 id="snekrpc.interface" class="doc doc-heading">
+            <code>snekrpc.interface</code>
+
+
+<a href="#snekrpc.interface" class="headerlink" title="Permanent link">&para;</a></h2>
+
     <div class="doc doc-contents first">
 
 
@@ -306,11 +311,11 @@
 
 
 
-<h2 id="snekrpc.interface.Server" class="doc doc-heading">
+<h3 id="snekrpc.interface.Server" class="doc doc-heading">
             <code>Server</code>
 
 
-<a href="#snekrpc.interface.Server" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.interface.Server" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -343,10 +348,10 @@
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.interface.Server.add_service" class="doc doc-heading">
+<h4 id="snekrpc.interface.Server.add_service" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">add_service(service,</span> <span style="color: #D4D2C8">name</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">)</span></code>
 
-<a href="#snekrpc.interface.Server.add_service" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.interface.Server.add_service" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -381,7 +386,12 @@ the name with an underscore.</p>
 
 
 
-<a id="snekrpc.service"></a>
+<h2 id="snekrpc.service" class="doc doc-heading">
+            <code>snekrpc.service</code>
+
+
+<a href="#snekrpc.service" class="headerlink" title="Permanent link">&para;</a></h2>
+
     <div class="doc doc-contents first">
 
         <p>Service base classes and helpers.</p>
@@ -409,11 +419,11 @@ the name with an underscore.</p>
 
 
 
-<h2 id="snekrpc.service.ServiceProxy" class="doc doc-heading">
+<h3 id="snekrpc.service.ServiceProxy" class="doc doc-heading">
             <code>ServiceProxy</code>
 
 
-<a href="#snekrpc.service.ServiceProxy" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.service.ServiceProxy" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -446,10 +456,10 @@ the name with an underscore.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.service.ServiceProxy.__dir__" class="doc doc-heading">
+<h4 id="snekrpc.service.ServiceProxy.__dir__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__dir__</span><span style="color: #D4D2C8">()</span></code>
 
-<a href="#snekrpc.service.ServiceProxy.__dir__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.service.ServiceProxy.__dir__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -464,10 +474,10 @@ the name with an underscore.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.service.ServiceProxy.__getattr__" class="doc doc-heading">
+<h4 id="snekrpc.service.ServiceProxy.__getattr__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__getattr__</span><span style="color: #D4D2C8">(cmd_name)</span></code>
 
-<a href="#snekrpc.service.ServiceProxy.__getattr__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.service.ServiceProxy.__getattr__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -482,10 +492,10 @@ the name with an underscore.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.service.ServiceProxy.__init__" class="doc doc-heading">
+<h4 id="snekrpc.service.ServiceProxy.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__init__</span><span style="color: #D4D2C8">(name,</span> <span style="color: #D4D2C8">client,</span> <span style="color: #D4D2C8">command_metadata</span><span style="color: #FFAD66">=True</span><span style="color: #D4D2C8">)</span></code>
 
-<a href="#snekrpc.service.ServiceProxy.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.service.ServiceProxy.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -512,11 +522,11 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h2 id="snekrpc.service.ServiceSpec" class="doc doc-heading">
+<h3 id="snekrpc.service.ServiceSpec" class="doc doc-heading">
             <code>ServiceSpec</code>
 
 
-<a href="#snekrpc.service.ServiceSpec" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.service.ServiceSpec" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -551,14 +561,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.service.ServiceSpec.from_service" class="doc doc-heading">
+<h4 id="snekrpc.service.ServiceSpec.from_service" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">from_service(svc,</span> <span style="color: #D4D2C8">service_name</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#snekrpc.service.ServiceSpec.from_service" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.service.ServiceSpec.from_service" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -582,11 +592,11 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h2 id="snekrpc.service.StreamInitiator" class="doc doc-heading">
+<h3 id="snekrpc.service.StreamInitiator" class="doc doc-heading">
             <code>StreamInitiator</code>
 
 
-<a href="#snekrpc.service.StreamInitiator" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.service.StreamInitiator" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -619,10 +629,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.service.StreamInitiator.__init__" class="doc doc-heading">
+<h4 id="snekrpc.service.StreamInitiator.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__init__</span><span style="color: #D4D2C8">(gen)</span></code>
 
-<a href="#snekrpc.service.StreamInitiator.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.service.StreamInitiator.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -637,10 +647,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.service.StreamInitiator.__iter__" class="doc doc-heading">
+<h4 id="snekrpc.service.StreamInitiator.__iter__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__iter__</span><span style="color: #D4D2C8">()</span></code>
 
-<a href="#snekrpc.service.StreamInitiator.__iter__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.service.StreamInitiator.__iter__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -664,10 +674,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="snekrpc.service.wrap_call" class="doc doc-heading">
+<h3 id="snekrpc.service.wrap_call" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">wrap_call(proxy,</span> <span style="color: #D4D2C8">cmd_name,</span> <span style="color: #D4D2C8">cmd_spec</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">)</span></code>
 
-<a href="#snekrpc.service.wrap_call" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.service.wrap_call" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -691,7 +701,12 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<a id="snekrpc.transport"></a>
+<h2 id="snekrpc.transport" class="doc doc-heading">
+            <code>snekrpc.transport</code>
+
+
+<a href="#snekrpc.transport" class="headerlink" title="Permanent link">&para;</a></h2>
+
     <div class="doc doc-contents first">
 
         <p>Base transport abstractions.</p>
@@ -719,11 +734,11 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h2 id="snekrpc.transport.Connection" class="doc doc-heading">
+<h3 id="snekrpc.transport.Connection" class="doc doc-heading">
             <code>Connection</code>
 
 
-<a href="#snekrpc.transport.Connection" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.transport.Connection" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -754,14 +769,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h3 id="snekrpc.transport.Connection.url" class="doc doc-heading">
+<h4 id="snekrpc.transport.Connection.url" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">url</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#snekrpc.transport.Connection.url" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Connection.url" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -778,10 +793,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Connection.__enter__" class="doc doc-heading">
+<h4 id="snekrpc.transport.Connection.__enter__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__enter__</span><span style="color: #D4D2C8">()</span></code>
 
-<a href="#snekrpc.transport.Connection.__enter__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Connection.__enter__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -796,10 +811,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Connection.__exit__" class="doc doc-heading">
+<h4 id="snekrpc.transport.Connection.__exit__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__exit__</span><span style="color: #D4D2C8">(exc_type,</span> <span style="color: #D4D2C8">exc,</span> <span style="color: #D4D2C8">tb)</span></code>
 
-<a href="#snekrpc.transport.Connection.__exit__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Connection.__exit__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -814,10 +829,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Connection.__init__" class="doc doc-heading">
+<h4 id="snekrpc.transport.Connection.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__init__</span><span style="color: #D4D2C8">(interface,</span> <span style="color: #D4D2C8">addr)</span></code>
 
-<a href="#snekrpc.transport.Connection.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Connection.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -832,10 +847,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Connection.close" class="doc doc-heading">
+<h4 id="snekrpc.transport.Connection.close" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">close()</span></code>
 
-<a href="#snekrpc.transport.Connection.close" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Connection.close" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -850,10 +865,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Connection.recv" class="doc doc-heading">
+<h4 id="snekrpc.transport.Connection.recv" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">recv()</span></code>
 
-<a href="#snekrpc.transport.Connection.recv" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Connection.recv" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -868,10 +883,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Connection.send" class="doc doc-heading">
+<h4 id="snekrpc.transport.Connection.send" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">send(data)</span></code>
 
-<a href="#snekrpc.transport.Connection.send" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Connection.send" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -895,11 +910,11 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h2 id="snekrpc.transport.Transport" class="doc doc-heading">
+<h3 id="snekrpc.transport.Transport" class="doc doc-heading">
             <code>Transport</code>
 
 
-<a href="#snekrpc.transport.Transport" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.transport.Transport" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -932,14 +947,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h3 id="snekrpc.transport.Transport.url" class="doc doc-heading">
+<h4 id="snekrpc.transport.Transport.url" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">url</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#snekrpc.transport.Transport.url" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Transport.url" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -956,10 +971,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Transport.__init__" class="doc doc-heading">
+<h4 id="snekrpc.transport.Transport.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__init__</span><span style="color: #D4D2C8">(url)</span></code>
 
-<a href="#snekrpc.transport.Transport.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Transport.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -974,14 +989,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Transport.connect" class="doc doc-heading">
+<h4 id="snekrpc.transport.Transport.connect" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">connect(client)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#snekrpc.transport.Transport.connect" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Transport.connect" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -996,14 +1011,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Transport.join" class="doc doc-heading">
+<h4 id="snekrpc.transport.Transport.join" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">join(timeout</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#snekrpc.transport.Transport.join" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Transport.join" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1018,14 +1033,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Transport.serve" class="doc doc-heading">
+<h4 id="snekrpc.transport.Transport.serve" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">serve(server)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#snekrpc.transport.Transport.serve" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Transport.serve" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1040,14 +1055,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.transport.Transport.stop" class="doc doc-heading">
+<h4 id="snekrpc.transport.Transport.stop" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">stop()</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#snekrpc.transport.Transport.stop" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.transport.Transport.stop" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1071,10 +1086,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="snekrpc.transport.create" class="doc doc-heading">
+<h3 id="snekrpc.transport.create" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">create(url,</span> <span style="color: #FFAD66">*</span><span style="color: #D4D2C8">args,</span> <span style="color: #FFAD66">**</span><span style="color: #D4D2C8">kwargs)</span></code>
 
-<a href="#snekrpc.transport.create" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.transport.create" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -1098,7 +1113,12 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<a id="snekrpc.codec"></a>
+<h2 id="snekrpc.codec" class="doc doc-heading">
+            <code>snekrpc.codec</code>
+
+
+<a href="#snekrpc.codec" class="headerlink" title="Permanent link">&para;</a></h2>
+
     <div class="doc doc-contents first">
 
         <p>Codec base classes and helpers.</p>
@@ -1126,11 +1146,11 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h2 id="snekrpc.codec.Codec" class="doc doc-heading">
+<h3 id="snekrpc.codec.Codec" class="doc doc-heading">
             <code>Codec</code>
 
 
-<a href="#snekrpc.codec.Codec" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.codec.Codec" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -1165,14 +1185,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.codec.Codec.decode" class="doc doc-heading">
+<h4 id="snekrpc.codec.Codec.decode" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">decode(data)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#snekrpc.codec.Codec.decode" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.codec.Codec.decode" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1187,14 +1207,14 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.codec.Codec.encode" class="doc doc-heading">
+<h4 id="snekrpc.codec.Codec.encode" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">encode(msg)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
   </span>
 
-<a href="#snekrpc.codec.Codec.encode" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.codec.Codec.encode" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1227,7 +1247,12 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<a id="snekrpc.formatter"></a>
+<h2 id="snekrpc.formatter" class="doc doc-heading">
+            <code>snekrpc.formatter</code>
+
+
+<a href="#snekrpc.formatter" class="headerlink" title="Permanent link">&para;</a></h2>
+
     <div class="doc doc-contents first">
 
         <p>Formatter plugin infrastructure.</p>
@@ -1255,11 +1280,11 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h2 id="snekrpc.formatter.Formatter" class="doc doc-heading">
+<h3 id="snekrpc.formatter.Formatter" class="doc doc-heading">
             <code>Formatter</code>
 
 
-<a href="#snekrpc.formatter.Formatter" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.formatter.Formatter" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -1292,10 +1317,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.formatter.Formatter.format" class="doc doc-heading">
+<h4 id="snekrpc.formatter.Formatter.format" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">format</span><span style="color: #D4D2C8">(res)</span></code>
 
-<a href="#snekrpc.formatter.Formatter.format" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.formatter.Formatter.format" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1310,10 +1335,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.formatter.Formatter.print" class="doc doc-heading">
+<h4 id="snekrpc.formatter.Formatter.print" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">print</span><span style="color: #D4D2C8">(res)</span></code>
 
-<a href="#snekrpc.formatter.Formatter.print" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.formatter.Formatter.print" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1328,10 +1353,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.formatter.Formatter.process" class="doc doc-heading">
+<h4 id="snekrpc.formatter.Formatter.process" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">process(res)</span></code>
 
-<a href="#snekrpc.formatter.Formatter.process" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.formatter.Formatter.process" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1364,7 +1389,12 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<a id="snekrpc.cli"></a>
+<h2 id="snekrpc.cli" class="doc doc-heading">
+            <code>snekrpc.cli</code>
+
+
+<a href="#snekrpc.cli" class="headerlink" title="Permanent link">&para;</a></h2>
+
     <div class="doc doc-contents first">
 
         <p>Command-line entry points for interacting with local and remote servers.</p>
@@ -1392,11 +1422,11 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 
 
 
-<h2 id="snekrpc.cli.Parser" class="doc doc-heading">
+<h3 id="snekrpc.cli.Parser" class="doc doc-heading">
             <code>Parser</code>
 
 
-<a href="#snekrpc.cli.Parser" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.cli.Parser" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -1429,10 +1459,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.__init__" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.__init__" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #FFD173">__init__</span><span style="color: #D4D2C8">()</span></code>
 
-<a href="#snekrpc.cli.Parser.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1447,10 +1477,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.add_command_args" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.add_command_args" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">add_command_args(parser,</span> <span style="color: #D4D2C8">cmd,</span> <span style="color: #D4D2C8">single_flags</span><span style="color: #FFAD66">=True</span><span style="color: #D4D2C8">)</span></code>
 
-<a href="#snekrpc.cli.Parser.add_command_args" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.add_command_args" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1465,10 +1495,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.add_global_args" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.add_global_args" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">add_global_args(parser)</span></code>
 
-<a href="#snekrpc.cli.Parser.add_global_args" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.add_global_args" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1483,10 +1513,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.add_option_arg" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.add_option_arg" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">add_option_arg(parser,</span> <span style="color: #D4D2C8">param,</span> <span style="color: #D4D2C8">chars</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">)</span></code>
 
-<a href="#snekrpc.cli.Parser.add_option_arg" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.add_option_arg" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1501,10 +1531,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.add_service_args" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.add_service_args" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">add_service_args(parser,</span> <span style="color: #5CCFE6">cls</span><span style="color: #D4D2C8">,</span> <span style="color: #D4D2C8">alias)</span></code>
 
-<a href="#snekrpc.cli.Parser.add_service_args" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.add_service_args" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1519,10 +1549,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.add_transport_args" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.add_transport_args" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">add_transport_args(parser,</span> <span style="color: #5CCFE6">cls</span><span style="color: #D4D2C8">)</span></code>
 
-<a href="#snekrpc.cli.Parser.add_transport_args" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.add_transport_args" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1537,10 +1567,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.add_transport_exception" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.add_transport_exception" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">add_transport_exception(parser,</span> <span style="color: #D4D2C8">name,</span> <span style="color: #D4D2C8">exc)</span></code>
 
-<a href="#snekrpc.cli.Parser.add_transport_exception" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.add_transport_exception" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1555,10 +1585,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.get_argument_help" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.get_argument_help" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">get_argument_help(doc</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">,</span> <span style="color: #D4D2C8">hint</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">,</span> <span style="color: #D4D2C8">default</span><span style="color: #FFAD66">=None</span><span style="color: #D4D2C8">)</span></code>
 
-<a href="#snekrpc.cli.Parser.get_argument_help" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.get_argument_help" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1573,10 +1603,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.get_argument_hint" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.get_argument_hint" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">get_argument_hint(hint)</span></code>
 
-<a href="#snekrpc.cli.Parser.get_argument_hint" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.get_argument_hint" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1591,10 +1621,10 @@ Otherwise, a sequence of command metadata can be provided directly.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.get_command_args" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.get_command_args" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">get_command_args(args)</span></code>
 
-<a href="#snekrpc.cli.Parser.get_command_args" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.get_command_args" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1610,10 +1640,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.get_converter" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.get_converter" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">get_converter(hint)</span></code>
 
-<a href="#snekrpc.cli.Parser.get_converter" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.get_converter" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1628,10 +1658,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.get_help" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.get_help" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">get_help(doc)</span></code>
 
-<a href="#snekrpc.cli.Parser.get_help" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.get_help" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1646,10 +1676,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.get_prefixed_args" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.get_prefixed_args" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">get_prefixed_args(args)</span></code>
 
-<a href="#snekrpc.cli.Parser.get_prefixed_args" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.get_prefixed_args" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1664,10 +1694,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.main" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.main" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">main()</span></code>
 
-<a href="#snekrpc.cli.Parser.main" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.main" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1682,10 +1712,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.print_status" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.print_status" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">print_status(status)</span></code>
 
-<a href="#snekrpc.cli.Parser.print_status" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.print_status" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1700,10 +1730,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.start_client" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.start_client" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">start_client(trn,</span> <span style="color: #D4D2C8">parser,</span> <span style="color: #D4D2C8">args)</span></code>
 
-<a href="#snekrpc.cli.Parser.start_client" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.start_client" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1718,10 +1748,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="snekrpc.cli.Parser.start_server" class="doc doc-heading">
+<h4 id="snekrpc.cli.Parser.start_server" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">start_server(trn,</span> <span style="color: #D4D2C8">args,</span> <span style="color: #D4D2C8">svc_args)</span></code>
 
-<a href="#snekrpc.cli.Parser.start_server" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#snekrpc.cli.Parser.start_server" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -1745,10 +1775,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="snekrpc.cli.io_stat_mode" class="doc doc-heading">
+<h3 id="snekrpc.cli.io_stat_mode" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">io_stat_mode()</span></code>
 
-<a href="#snekrpc.cli.io_stat_mode" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.cli.io_stat_mode" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -1763,10 +1793,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="snekrpc.cli.main" class="doc doc-heading">
+<h3 id="snekrpc.cli.main" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">main()</span></code>
 
-<a href="#snekrpc.cli.main" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.cli.main" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -1781,10 +1811,10 @@ pass to the selected command.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="snekrpc.cli.parse_alias" class="doc doc-heading">
+<h3 id="snekrpc.cli.parse_alias" class="doc doc-heading">
             <code class="highlight language-python"><span style="color: #D4D2C8">parse_alias(name)</span></code>
 
-<a href="#snekrpc.cli.parse_alias" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#snekrpc.cli.parse_alias" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">

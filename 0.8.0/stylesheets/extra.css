@@ -28,5 +28,6 @@
 
 /* section indentation */
 #mkdocs-terminal-content .doc .doc-contents {
-  margin-left: 40px;
+  margin-top: -1em;
+  margin-left: 20px;
 }
