@@ -17,7 +17,7 @@ The client will connect on the first attempt to interact with the server. In thi
 As a convenience, services are also accessible as attributes on the `Client` instance, however the `service()` method is required when service names conflict with `Client` method names.
 
 ```python
-print(client.echo.echo('hello'))
+print(client.service('echo').echo('hello'))
 ```
 
 Retry behavior:

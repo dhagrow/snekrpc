@@ -84,14 +84,6 @@ class Client(Interface):
             self._con.close()
         self._con = None
 
-    def __getattr__(self, name: str) -> ServiceProxy:
-        try:
-            return self.service(name)
-        except errors.RemoteError as exc:
-            if exc.name != 'KeyError':
-                raise
-            raise AttributeError(name) from exc
-
     def service(
         self, name: str, metadata: bool | Sequence[utils.function.SignatureSpec] = True
     ) -> ServiceProxy:
