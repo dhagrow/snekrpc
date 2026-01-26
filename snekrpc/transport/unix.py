@@ -19,10 +19,9 @@ class UnixConnection(tcp.TcpConnection):
     log = log
 
 
-class UnixTransport(tcp.TcpTransport):
+class UnixTransport(tcp.TcpTransport, name='unix'):
     """Transport that communicates over Unix domain sockets."""
 
-    _name_ = 'unix'
     log = log
     Connection: type[tcp.TcpConnection] = UnixConnection
 

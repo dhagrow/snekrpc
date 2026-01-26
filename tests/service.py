@@ -5,9 +5,7 @@ from typing import Any
 import snekrpc
 
 
-class TestService(snekrpc.Service):
-    _name_ = 'test'
-
+class TestService(snekrpc.Service, name='test'):
     @snekrpc.command()
     def null(self):
         return None

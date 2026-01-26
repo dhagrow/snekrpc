@@ -2,33 +2,24 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import abc
+from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
-from .. import logs, registry, utils
+from .. import logs, utils
+from ..registry import Registry
 
 if TYPE_CHECKING:
     from ..interface import Interface
 
-TransportMeta = registry.create_metaclass(__name__)
-
 log = logs.get(__name__)
 
 
-def create(url: str | utils.url.Url | 'Transport', transport_args: Mapping[str, Any] | None = None):
-    """Return a `Transport` instance for *url*."""
-    if isinstance(url, Transport):
-        return url
-
-    scheme = utils.url.Url(url).scheme
-    cls = TransportMeta.get(scheme)
-    return cls(url, **(transport_args or {}))
-
-
-class Transport(metaclass=TransportMeta):
+class Transport(abc.ABC):
     """Base transport class mirrored across clients and servers."""
 
-    _name_: str | None = None
+    def __init_subclass__(cls, /, name: str | None = None) -> None:
+        REGISTRY.set(cls.__name__ if name is None else name, cls)
 
     def __init__(self, url: str | utils.url.Url):
         """Store the normalized URL for later use."""
@@ -39,18 +30,22 @@ class Transport(metaclass=TransportMeta):
         """Return the configured transport URL."""
         return self._url
 
+    @abc.abstractmethod
     def connect(self, client: Any) -> Connection:
         """Connect to a remote endpoint and return a Connection."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def serve(self, server: Any) -> None:
         """Start serving RPC requests."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def stop(self) -> None:
         """Stop serving and release resources."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def join(self, timeout: float | None = None) -> None:
         """Block until the server threads exit."""
         raise NotImplementedError
@@ -85,6 +80,18 @@ class Connection:
         """Allow context-manager usage."""
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: type[Exception], exc: Exception, tb: TracebackType) -> None:
         """Close the connection when leaving a `with` block."""
         self.close()
+
+
+REGISTRY = Registry(__name__, Transport)
+
+
+def get(url: str | utils.url.Url) -> type[Transport]:
+    return REGISTRY.get(utils.url.Url(url).scheme)
+
+
+def create(url: str | utils.url.Url, *args: Any, **kwargs: Any) -> Transport:
+    """Create a `Transport` instance for *url*."""
+    return REGISTRY.create(utils.url.Url(url).scheme, url, *args, **kwargs)

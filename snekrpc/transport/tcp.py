@@ -46,13 +46,13 @@ class TcpConnection(Connection):
 
     def send(self, data: bytes) -> None:
         """Send bytes through the socket."""
+        data_len = len(data)
+        size = struct.pack('>I', data_len)
         try:
-            data_len = len(data)
-            size = struct.pack('>I', data_len)
             self._sock.sendall(size)
             self._sock.sendall(data)
         except OSError as exc:
-            raise errors.TransportError(exc) from exc
+            raise errors.SendInterrupted() from exc
 
     def close(self) -> None:
         """Close the socket."""
@@ -83,10 +83,9 @@ class TcpConnection(Connection):
             yield chunk
 
 
-class TcpTransport(Transport):
+class TcpTransport(Transport, name='tcp'):
     """Expose the transport API over TCP."""
 
-    _name_ = 'tcp'
     log = log
     Connection = TcpConnection
 
@@ -127,8 +126,7 @@ class TcpTransport(Transport):
         if self._ssl_cert:
             ctx = ssl.create_default_context()
             ctx.load_verify_locations(self._ssl_cert)
-            hostname = socket.gethostbyaddr(self._addr[0])[0]
-            sock = ctx.wrap_socket(sock, server_hostname=hostname)
+            sock = ctx.wrap_socket(sock, server_hostname=self._addr[0])
 
         return self.Connection(client, sock, self._url.netloc, self.chunk_size)
 

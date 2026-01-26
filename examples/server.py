@@ -1,11 +1,29 @@
+import argparse
 import random
+import time
+from datetime import datetime, timezone
 from typing import Any, Iterable
+
+import msgspec
 
 import snekrpc
 from snekrpc import logs
 
 
-class Service(snekrpc.Service):
+class Command(msgspec.Struct):
+    name: str
+    arguments: dict[str, Any]
+
+
+class Event(msgspec.Struct):
+    name: str
+    message: str
+    timestamp: datetime = msgspec.field(
+        default_factory=lambda: datetime.now().astimezone(timezone.utc)
+    )
+
+
+class Service(snekrpc.Service, name='example'):
     """Example service"""
 
     @snekrpc.command()
@@ -13,6 +31,20 @@ class Service(snekrpc.Service):
     def echo(self, value: Any) -> Any:
         """Echo back the input value."""
         return value
+
+    @snekrpc.command()
+    def command(self, command: Command) -> None:
+        print(f'{command=}')
+
+    @snekrpc.command()
+    def event(self) -> Event:
+        return Event('Test', 'a single event!')
+
+    @snekrpc.command()
+    def events(self) -> Iterable[Event]:
+        while True:
+            yield Event('Test', 'an event in a stream!')
+            time.sleep(1)
 
     @snekrpc.command()
     def chunk(self) -> bytes:
@@ -39,12 +71,19 @@ class Service(snekrpc.Service):
             pass
 
 
-def main():
-    logs.init()
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', default='tcp://localhost:1234')
+    parser.add_argument('-c', default='msgpack')
+    parser.add_argument('-v', default=0, action='count')
+    args = parser.parse_args()
 
-    s = snekrpc.Server('tcp://localhost:1234')
-    s.add_service(Service(), alias='ex')
-    s.add_service('meta')
+    logs.init(args.v)
+
+    s = snekrpc.Server(args.u, codec=args.c)
+    s.add_service(Service())
+    # this simply exposes the hidden metadata service
+    s.add_service(s.service('_meta'), name='meta')
     s.serve()
 
 

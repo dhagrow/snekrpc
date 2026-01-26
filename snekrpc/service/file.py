@@ -17,10 +17,8 @@ log = logs.get(__name__)
 CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
 
 
-class FileService(Service):
+class FileService(Service, name='file'):
     """Expose file operations such as listing, uploads, and downloads."""
-
-    _name_ = 'file'
 
     @param('root_path', doc='root path for all file operations')
     @param('safe_root', doc='ensures that no file operation escapes the root path')
@@ -28,7 +26,6 @@ class FileService(Service):
     def __init__(
         self, root_path: str | None = None, safe_root: bool = True, chunk_size: int = CHUNK_SIZE
     ) -> None:
-        """Configure the working root, safety, and buffering settings."""
         self.root_path = root_path or os.getcwd()
         self.safe_root = safe_root
         self.chunk_size = chunk_size
@@ -46,7 +43,7 @@ class FileService(Service):
         self._root_path = os.path.join(path, '')
 
     @command()
-    def paths(self, pattern: str | None = None, with_metadata: bool = False):
+    def paths(self, pattern: str | None = None, with_metadata: bool = False) -> Iterable[str]:
         """Yield file paths (optionally including metadata) matching pattern."""
         pattern = self.check_path(pattern or '*')
         if os.path.isdir(pattern):
@@ -54,20 +51,21 @@ class FileService(Service):
 
         for name in glob.iglob(pattern):
             if isinstance(name, bytes):
-                name = name.decode('utf8')
+                name = name.decode()
 
             path = os.path.relpath(name, self.root_path) if self.safe_root else name
             if path == '.':
                 continue
 
-            if not with_metadata:
-                yield path
-                continue
+            yield path
 
+    @command()
+    def path_info(self, pattern: str | None = None) -> Iterable[dict[str, Any]]:
+        for path in self.paths(pattern):
             entry: dict[str, Any] = {'path': path}
             try:
-                stat = os.stat(name)
-                entry.update(size=stat.st_size, mtime=stat.st_mtime, isfile=os.path.isfile(name))
+                stat = os.stat(path)
+                entry.update(size=stat.st_size, mtime=stat.st_mtime, isfile=os.path.isfile(path))
             except OSError as exc:
                 log.warning('could not read file: %s', exc)
                 entry.update(size=None, mtime=None, isfile=None)
@@ -163,12 +161,11 @@ class FileService(Service):
         if not root_path:
             raise ValueError('safe_root is enabled, but no root_path is set')
 
-        if '..' in path:
+        full_path = os.path.join(root_path, path)
+        full_path_real = os.path.realpath(full_path)
+        root_path_real = os.path.realpath(root_path)
+
+        if os.path.commonpath([root_path_real, full_path_real]) != root_path_real:
             raise OSError(f"Permission denied: '{path}'")
 
-        abs_path = os.path.join(root_path, path)
-
-        if not abs_path.startswith(root_path):
-            raise OSError(f"Permission denied: '{path}'")
-
-        return abs_path
+        return full_path_real

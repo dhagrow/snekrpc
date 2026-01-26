@@ -17,9 +17,15 @@ class TransportError(SnekRPCError):
 class SendInterrupted(TransportError):
     """Raised when data sent to the remote end is less than expected."""
 
+    def __init__(self, msg: str = 'send interrupted'):
+        super().__init__(msg)
+
 
 class ReceiveInterrupted(TransportError):
     """Raised when data received from the remote end is less than expected."""
+
+    def __init__(self, msg: str = 'receive interrupted'):
+        super().__init__(msg)
 
 
 class ClientError(SnekRPCError):

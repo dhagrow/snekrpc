@@ -28,8 +28,7 @@ def start_thread(func: Callable[..., Any], *args: Any, **kwargs: Any) -> threadi
         finally:
             log.debug('thread stopped [%s]: %s', tid, func.__name__)
 
-    thread = threading.Thread(target=safe, args=args, kwargs=kwargs)
-    thread.daemon = True
+    thread = threading.Thread(target=safe, args=args, kwargs=kwargs, daemon=True)
     thread.start()
     return thread
 

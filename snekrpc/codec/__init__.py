@@ -2,31 +2,25 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import abc
 from typing import Any
 
-from .. import errors, registry, utils
-
-CodecMeta = registry.create_metaclass(__name__)
-
-
-def create(name: str | Codec, codec_args: Mapping[str, Any] | None = None) -> Codec:
-    """Return an instance of the Codec matching *name*."""
-    if isinstance(name, Codec):
-        return name
-    cls = CodecMeta.get(name)
-    return cls(**(codec_args or {}))
+from .. import errors, utils
+from ..registry import Registry
 
 
-class Codec(metaclass=CodecMeta):
+class Codec(abc.ABC):
     """Base class for codecs that know how to encode/decode RPC payloads."""
 
-    _name_: str
+    def __init_subclass__(cls, /, name: str | None = None) -> None:
+        REGISTRY.set(cls.__name__ if name is None else name, cls)
 
+    @abc.abstractmethod
     def encode(self, msg: Any) -> bytes:
         """Serialize `msg` into bytes."""
         raise NotImplementedError('abstract')
 
+    @abc.abstractmethod
     def decode(self, data: bytes) -> Any:
         """Deserialize bytes into Python objects."""
         raise NotImplementedError('abstract')
@@ -44,3 +38,7 @@ class Codec(metaclass=CodecMeta):
             return self.decode(data)
         except Exception as exc:
             raise errors.DecodeError(f'{exc}: data={utils.format.elide(repr(data))!r}') from exc
+
+
+REGISTRY = Registry(__name__, Codec)
+get, create = REGISTRY.get, REGISTRY.create

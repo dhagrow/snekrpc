@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
+from typing import Any, cast
 
 from . import errors, logs, protocol, registry, utils
+from .codec import REGISTRY as CODEC_REGISTRY
 from .codec import Codec
-from .codec import create as get_codec
-from .service import ServiceProxy
-from .service import create as get_service
+from .codec import create as create_codec
+from .service import REGISTRY as SERVICE_REGISTRY
+from .service import Service, ServiceProxy
+from .service import create as create_service
+from .transport import REGISTRY as TRANSPORT_REGISTRY
 from .transport import Connection, Transport
-from .transport import create as get_transport
-
-if TYPE_CHECKING:
-    from .service import Service
+from .transport import create as create_transport
 
 DEFAULT_CODEC = 'msgpack'
 
@@ -24,17 +24,27 @@ class Interface:
         self,
         transport: str | Transport | None = None,
         codec: str | Codec | None = None,
-        version: str | None = None,
     ) -> None:
         registry.init()
 
-        self.transport = get_transport(transport or utils.DEFAULT_URL)
+        self.transport = (
+            transport
+            if isinstance(transport, Transport)
+            else create_transport(transport or utils.DEFAULT_URL)
+        )
         self.codec = codec
-        self.version = version
 
     @property
-    def url(self) -> utils.url.Url:
-        return self.transport.url
+    def url(self) -> str:
+        return str(self.transport.url)
+
+    @property
+    def transport_name(self) -> str | None:
+        return None if self.transport is None else TRANSPORT_REGISTRY.get_name(type(self.transport))
+
+    @property
+    def codec_name(self) -> str:
+        return '' if self._codec is None else CODEC_REGISTRY.get_name(type(self._codec))
 
     @property
     def codec(self) -> Codec | None:
@@ -42,8 +52,8 @@ class Interface:
 
     @codec.setter
     def codec(self, codec: str | Codec | None) -> None:
-        self._codec = codec if codec is None else get_codec(codec)
-        log.debug('codec: %s', self._codec and self._codec._name_)
+        self._codec = codec if codec is None or isinstance(codec, Codec) else create_codec(codec)
+        log.debug('codec: %s', self.codec_name)
 
 
 class Client(Interface):
@@ -51,11 +61,10 @@ class Client(Interface):
         self,
         transport: str | Transport | None = None,
         codec: str | Any | None = None,
-        version: str | None = None,
         retry_count: int | None = None,
         retry_interval: float | None = None,
     ) -> None:
-        super().__init__(transport, codec, version)
+        super().__init__(transport, codec)
         # TODO replace this with a proper connection pool
         self._con: Connection | None = None
         self.retry_count = retry_count
@@ -75,17 +84,6 @@ class Client(Interface):
             self._con.close()
         self._con = None
 
-    def __getitem__(self, name: str) -> ServiceProxy:
-        return self.service(name)
-
-    def __getattr__(self, name: str) -> ServiceProxy:
-        try:
-            return self.service(name)
-        except errors.RemoteError as exc:
-            if exc.name != 'KeyError':
-                raise
-            raise AttributeError(name) from exc
-
     def service(
         self, name: str, metadata: bool | Sequence[utils.function.SignatureSpec] = True
     ) -> ServiceProxy:
@@ -93,7 +91,7 @@ class Client(Interface):
 
     def service_names(self) -> list[str]:
         meta = self.service('_meta')
-        return meta.service_names()
+        return cast(list[str], meta.service_names())
 
 
 class Server(Interface):
@@ -104,10 +102,13 @@ class Server(Interface):
         version: str | None = None,
         remote_tracebacks: bool = False,
     ) -> None:
-        super().__init__(transport, codec or DEFAULT_CODEC, version)
+        super().__init__(transport, codec or DEFAULT_CODEC)
         self._services: dict[str, Service] = {}
-        self.add_service('meta', {'server': self}, '_meta')
+        self.add_service(create_service('meta', server=self), name='_meta')
+        self.version = version
         self.remote_tracebacks = remote_tracebacks
+
+        log.info('server version: %s', version or '-')
 
     def serve(self) -> None:
         try:
@@ -124,31 +125,26 @@ class Server(Interface):
     def join(self, timeout: float | None = None) -> None:
         self.transport.join(timeout)
 
-    def add_service(
-        self,
-        service: str | Service,
-        service_args: Mapping[str, Any] | None = None,
-        alias: str | None = None,
-    ) -> 'Server':
-        if service == 'meta':
-            service_args = {'server': self}
+    def add_service(self, service: Service, name: str | None = None) -> Server:
+        """Register a service with the server.
 
-        svc = get_service(service, service_args, alias)
-        if not svc._name_:
-            raise ValueError('service must define a name')
-        self._services[svc._name_] = svc
-        log.debug('service added: %s', svc._name_)
+        You can register a service but keep it hidden from users by prefixing
+        the name with an underscore.
+        """
+        name = name or SERVICE_REGISTRY.get_name(type(service))
+        self._services[name] = service
+        log.debug('service added: %s', name)
         return self
 
-    def remove_service(self, name: str) -> 'Server':
+    def remove_service(self, name: str) -> Server:
         del self._services[name]
         return self
 
     def service(self, name: str) -> Service:
         return self._services[name]
 
-    def services(self) -> list[Service]:
-        return [self.service(name) for name in self.service_names()]
+    def services(self) -> list[tuple[str, Service]]:
+        return [(name, self.service(name)) for name in self.service_names()]
 
     def service_names(self) -> list[str]:
         return [name for name in self._services if name and not name.startswith('_')]

@@ -1,9 +1,13 @@
 dist/
+site/
 __pycache__/
 *.egg-info/
 .venv/
+.vscode/
 .*_cache/
 .jj/
 *.pyc
+.coverage
 .python-version
 .mise.toml
+review.txt

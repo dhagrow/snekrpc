@@ -3,7 +3,7 @@
 from snekrpc import cli
 
 
-def main():
+def main() -> None:
     """Delegate to the CLI runner while swallowing Ctrl+C noise."""
     try:
         cli.main()

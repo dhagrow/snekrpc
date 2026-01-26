@@ -1,0 +1,33 @@
+/* Hide permalinks on headings until hover. */
+#mkdocs-terminal-content h1 .headerlink,
+#mkdocs-terminal-content h2 .headerlink,
+#mkdocs-terminal-content h3 .headerlink,
+#mkdocs-terminal-content h4 .headerlink,
+#mkdocs-terminal-content h5 .headerlink,
+#mkdocs-terminal-content h6 .headerlink {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+#mkdocs-terminal-content h1:hover .headerlink,
+#mkdocs-terminal-content h2:hover .headerlink,
+#mkdocs-terminal-content h3:hover .headerlink,
+#mkdocs-terminal-content h4:hover .headerlink,
+#mkdocs-terminal-content h5:hover .headerlink,
+#mkdocs-terminal-content h6:hover .headerlink {
+  opacity: 1;
+}
+
+/* Show code block scrollbars only when needed. */
+#mkdocs-terminal-content pre,
+#mkdocs-terminal-content pre > code,
+#mkdocs-terminal-content .highlight {
+  overflow-x: auto;
+  text-wrap: nowrap;
+}
+
+/* section indentation */
+#mkdocs-terminal-content .doc .doc-contents {
+  margin-top: -1em;
+  margin-left: 20px;
+}

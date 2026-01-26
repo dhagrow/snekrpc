@@ -6,22 +6,47 @@ import sys
 from logging import DEBUG, INFO, Formatter, StreamHandler, getLogger
 from logging import Logger as Logger
 from types import TracebackType
+from typing import Callable
+
+try:
+    import colorlog
+except ImportError:
+    colorlog = None  # type: ignore
 
 get = getLogger
 log = get(__name__)
 
 
-def init(debug_level: int = 0, log_exceptions: bool = True) -> None:
+def is_debug(log: Logger) -> bool:
+    return log.isEnabledFor(DEBUG)
+
+
+def error_logger(logger: Logger) -> Callable[..., None]:
+    return logger.exception if is_debug(logger) else logger.error
+
+
+def init(debug_level: int = 0, use_color: bool = True, log_exceptions: bool = True) -> None:
     """Initializes simple logging defaults."""
     root_log = get()
+    handler = StreamHandler()
+
+    if not use_color or colorlog is None:
+        formatter = Formatter('%(levelname)8s %(asctime)s . %(message)s')
+    else:
+        formatter = colorlog.ColoredFormatter(
+            '%(log_color)s%(levelname)8s %(asctime)s . %(message)s',
+            log_colors={
+                'DEBUG': 'thin_white',
+                'INFO': 'white',
+                'WARNING': 'bold_yellow',
+                'ERROR': 'bold_red',
+                'CRITICAL': 'bold_white,bg_bold_red',
+            },
+        )
 
     if root_log.handlers:
         return
 
-    fmt = '%(levelname).1s %(asctime)s . %(message)s'
-    formatter = Formatter(fmt)
-
-    handler = StreamHandler()
     handler.setFormatter(formatter)
 
     root_log.addHandler(handler)

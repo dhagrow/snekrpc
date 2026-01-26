@@ -25,6 +25,8 @@ COLLECTION_TYPES = frozenset(['list', 'dict'])
 Args = argparse.Namespace
 CommandMeta = dict[str, Any]
 
+log = logs.get(__name__)
+
 
 def main() -> None:
     """Convenient entry-point."""
@@ -62,12 +64,15 @@ class Parser:
             utils.path.import_module(imp)
 
         if args.list:
-            meta = {
-                'codecs': codec.CodecMeta,
-                'formatters': formatter.FormatterMeta,
-                'services': service.ServiceMeta,
-                'transports': transport.TransportMeta,
-            }[args.list]
+            meta = cast(
+                registry.Registry[Any],
+                {
+                    'codecs': codec.REGISTRY,
+                    'formatters': formatter.REGISTRY,
+                    'services': service.REGISTRY,
+                    'transports': transport.REGISTRY,
+                }[args.list],
+            )
 
             # select an output formatter
             fmt = None
@@ -85,31 +90,31 @@ class Parser:
         # parser for transport and service args
         parser = argparse.ArgumentParser(parents=[self.base_parser])
 
-        cls = transport.create(args.url)
-        if isinstance(cls, Exception):
-            self.add_transport_exception(parser, args.url.scheme, cls)
+        transport_cls = transport.get(args.url)
+        if isinstance(transport_cls, Exception):
+            self.add_transport_exception(parser, args.url.scheme, transport_cls)
         else:
-            self.add_transport_args(parser, cls)
+            self.add_transport_args(parser, transport_cls)
 
         # add service arguments
         used_aliases = set()
         for name in sorted(args.services):
-            name, alias = service.parse_alias(name)
-            cls = service.get(name)
+            name, alias = parse_alias(name)
+            service_cls = service.get(name)
 
-            alias = alias or cls._name_
+            alias = alias or name
             if alias in used_aliases:
                 raise ValueError(f'duplicate service alias: {alias}')
             used_aliases.add(alias)
 
-            self.add_service_args(parser, cls, alias)
+            self.add_service_args(parser, service_cls, alias)
 
         # collect transport and service args
         sub_args = parser.parse_args(extra_args)
         trn_args, svc_args = self.get_prefixed_args(sub_args)
 
         trn_name = args.url.scheme
-        trn = transport.create(args.url, trn_args.get(trn_name))
+        trn = transport.create(args.url, **trn_args.get(trn_name, {}))
 
         # start client or server
         if args.server_mode:
@@ -117,6 +122,8 @@ class Parser:
             if args.help:
                 parser.print_help()
                 parser.exit()
+            if args.version is True:
+                parser.error('expected a version string')
             if args.rest:
                 parser.error('unrecognized arguments: {}'.format(' '.join(args.rest)))
             self.start_server(trn, args, svc_args)
@@ -212,19 +219,18 @@ class Parser:
         cmd_args, cmd_kwargs = self.get_command_args(args)
 
         # get the command function
-        svc = client.service(args.svc_name, metadata=[args.cmd_meta])
-        func = getattr(svc, args.cmd_name)
+        proxy = client.service(args.svc_name, metadata=[args.cmd_meta])
+        func = getattr(proxy, args.cmd_name)
 
         # call the command
-        res: Any | None = None
         try:
             res = func(*cmd_args, **cmd_kwargs)
-        except errors.RemoteError as e:
+            assert res is not None
+            fmt.process(res)
+        except Exception as e:
             if verbose:
                 raise
-            parser.error(str(e))
-        assert res is not None
-        fmt.process(res)
+            log.error('command error: %s', e)
 
     def start_server(
         self,
@@ -237,15 +243,16 @@ class Parser:
         s = interface.Server(
             trn,
             codec=args.codec,
-            version=args.server_version,
+            version=args.version,
             remote_tracebacks=args.remote_tracebacks,
         )
 
         # add services
         for name in args.services:
-            name, alias = service.parse_alias(name)
+            name, alias = parse_alias(name)
             s_args = svc_args.get(name, {})
-            s.add_service(name, s_args, alias)
+            svc = service.create(name, **s_args)
+            s.add_service(svc, alias)
 
         s.serve()
 
@@ -271,8 +278,8 @@ class Parser:
         pass to the selected command."""
         cmd: SignatureSpec = args.cmd_meta
 
-        cmd_args = []
-        cmd_kwargs = {}
+        cmd_args: list[Any] = []
+        cmd_kwargs: dict[str, Any] = {}
 
         for param in cmd.parameters:
             if param.hide:
@@ -314,11 +321,15 @@ class Parser:
 
         self.add_command_args(svc_parser, cmd, single_flags=False)
 
-    def add_transport_args(self, parser: argparse.ArgumentParser, cls: Any) -> None:
+    def add_transport_args(
+        self, parser: argparse.ArgumentParser, cls: type[transport.Transport]
+    ) -> None:
         """Expose transport constructor parameters with a unique prefix."""
         ignored = {'url', 'timeout'}
+        trn_name = transport.REGISTRY.get_name(cls)
+
         trn_parser = parser.add_argument_group(
-            '{} transport arguments'.format(cls._name_),
+            '{} transport arguments'.format(trn_name),
             'To see arguments for another transport, set the "--url" argument',
         )
 
@@ -329,7 +340,7 @@ class Parser:
             params.append(
                 msgspec.structs.replace(
                     param,
-                    name='_'.join(['transport', cls._name_, param.name]),
+                    name='_'.join(['transport', trn_name, param.name]),
                     # force keyword-only params for clarity
                     kind=param.kind if param.kind == Param.VAR_KEYWORD else Param.KEYWORD_ONLY,
                     hide=param.name in ignored,
@@ -353,7 +364,7 @@ class Parser:
         """Translate command metadata into argparse arguments."""
 
         def is_option_arg(param: ParameterSpec) -> bool:
-            return kind == Param.VAR_KEYWORD or param.has_default
+            return param.kind == Param.VAR_KEYWORD or param.has_default
 
         if single_flags:
             # keep track of used single char flags
@@ -510,7 +521,13 @@ class Parser:
             default=0,
             help='enable verbose output (-vv for more)',
         )
-        parser.add_argument('-V', '--version', action='store_true', help='show server version')
+        parser.add_argument(
+            '-V',
+            '--version',
+            nargs='?',
+            const=True,
+            help='show server version (client) or set server version (server)',
+        )
 
         group = parser.add_argument_group('configuration arguments')
 
@@ -519,6 +536,7 @@ class Parser:
             '--url',
             type=utils.url.Url,
             default=utils.DEFAULT_URL,
+            metavar='TRANSPORT://HOST:PORT',
             help='URL to connect or bind to (default: {})'.format(utils.DEFAULT_URL),
         )
         group.add_argument(
@@ -540,11 +558,9 @@ class Parser:
             '--service',
             action='append',
             dest='services',
-            metavar='SERVICE',
+            metavar='SERVICE[:alias]',
             default=[],
-            help='add a service module (can be set multiple times) '
-            'formats: "<built-in service>[:alias]" or '
-            '"<module.ServiceClass>[:alias]"',
+            help='register a service with the server (can be set multiple times)',
         )
 
         group = parser.add_argument_group('client arguments')
@@ -569,7 +585,6 @@ class Parser:
 
         group = parser.add_argument_group('server arguments')
 
-        group.add_argument('--server-version', help='version string for the server')
         group.add_argument(
             '--remote-tracebacks', action='store_true', help='send tracebacks with errors'
         )
@@ -684,12 +699,21 @@ class Parser:
         # TODO: abide by --format flag
         width = max(len(k) for k in status)
         for k, v in sorted(status.items()):
-            print('{:>{}}: {}'.format(k, width, v))
+            print('{:>{}}: {}'.format(k, width, v or '-'))
 
 
 ##
 ## cli utils
 ##
+
+
+def parse_alias(name: str) -> tuple[str, str | None]:
+    """Split ``name`` into ``module`` and ``alias`` if ``:`` is present."""
+    try:
+        base, alias = name.split(':')
+    except ValueError:
+        return name, None
+    return base, alias
 
 
 def is_stream_hint(hint: str | None) -> bool:
@@ -705,15 +729,3 @@ def io_stat_mode() -> str:
         return 'redirected'
     else:
         return 'terminal'
-
-
-# fix for open issue: https://bugs.python.org/issue14156
-class FileType(argparse.FileType):
-    """Version of argparse.FileType that unwraps stdin buffers reliably."""
-
-    def __call__(self, string: str):
-        """Return a binary buffer when reading stdin."""
-        fp = super().__call__(string)
-        if string == '-' and 'r' in self._mode:
-            fp = getattr(fp, 'buffer', fp)
-        return fp
