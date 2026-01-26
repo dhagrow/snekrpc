@@ -13,6 +13,8 @@ nav:
       - Client: client.md
   - Reference:
       - API: api.md
+  - Links:
+      - Github: https://github.com/dhagrow/snekrpc
 plugins:
   - search
   - mkdocstrings:

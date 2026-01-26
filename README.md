@@ -2,6 +2,8 @@
 
 `snekrpc` is a lightweight Python RPC toolkit focused on fast prototyping for microservices and distributed systems. It ships a small core, with pluggable transports and codecs. A client-side Python library and CLI are generated at runtime based on metadata from services.
 
+[🕮 Documentation](https://dhagrow.github.io/snekrpc)
+
 ## Features
 
 - Simple service model with metadata and runtime introspection
