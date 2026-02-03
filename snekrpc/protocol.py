@@ -307,8 +307,7 @@ class Protocol:
         msg = str(exc)
         # this method is only used by servers, so `remote_tracebacks` will exist
         # TODO: split protocol into client/server components?
-        assert isinstance(self._ifc, Server)
-        tb = traceback.format_exc().rstrip() if self._ifc.remote_tracebacks else ''
+        tb = traceback.format_exc().rstrip() if self._ifc.remote_tracebacks else ''  # type: ignore
 
         log.exception('%s: %s', name, msg)
         self.send_msg(ErrorMessage(name, msg, tb))
