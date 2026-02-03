@@ -1,6 +1,11 @@
 # snekrpc changelog
 
-## 1.8.0 - 2026-01-26
+## 0.8.1 - 2026-02-02
+
+### Fixed
+- Error handling bug
+
+## 0.8.0 - 2026-01-26
 
 ### Added
 
